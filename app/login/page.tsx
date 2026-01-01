@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/utils/axiosInstance';
@@ -14,14 +14,17 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  // STATE MANAGEMENT
+  // STATE
   const [formData, setFormData] = useState({ username: '', password: '' });
-  const [isAuthenticating, setIsAuthenticating] = useState(false); // Controls the Wave Animation
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [toast, setToast] = useState<{ show: boolean; msg: string; type: 'error' | 'success' }>({
     show: false,
     msg: '',
     type: 'error'
   });
+
+  // STRICT MODE FIX: Track if we processed the GitHub code
+  const codeProcessed = useRef(false);
 
   // CONFIGURATION
   const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || "Ov23libTC9bolbUzZeBA"; 
@@ -36,50 +39,29 @@ function LoginContent() {
     setToast(prev => ({ ...prev, show: false }));
   };
 
-  // --- HANDLE OAUTH CALLBACKS (GitHub & Params) ---
-  useEffect(() => {
-    // 1. Handle GitHub Code
-    const code = searchParams.get('code');
-    if (code && !localStorage.getItem('auth_token')) {
-      handleGithubLogin(code);
-    }
-    
-    // 2. Handle Registration Success
-    if (searchParams.get('registered')) {
-      showToast('Account created successfully. Please login.', 'success');
-    }
-  }, [searchParams]);
-
-  // --- SHARED AUTH SUCCESS LOGIC ---
-  // --- SHARED AUTH SUCCESS LOGIC ---
+  // --- ROBUST AUTH SUCCESS (Handles missing usernames) ---
   const handleAuthSuccess = async (data: any) => {
-    // 1. Save the Token first (Critical for the next API call)
+    // 1. Save Token
     const token = data.token || data.key; 
     if (!token) {
-      showToast("Login failed: No token received from server.");
+      showToast("Login failed: No token received.");
       setIsAuthenticating(false);
       return;
     }
     localStorage.setItem('auth_token', token);
 
-    // 2. Check if we need to fetch User Details manually
-    // (Social Login often misses this, while Form Login usually has it)
+    // 2. Fetch User Profile if missing
     let username = data.username;
     let userId = data.user_id;
 
     if (!username) {
       try {
-        // Fetch user profile using the token we just saved
-        // Try the standard dj-rest-auth endpoint first
         const userRes = await api.get('/auth/user/');
-        
         username = userRes.data.username;
         userId = userRes.data.pk || userRes.data.id;
-        
       } catch (err) {
-        console.warn("Could not fetch user details automatically.", err);
-        // Fallback: If we really can't get a username, use 'User' so the app doesn't break
-        username = 'User'; 
+        console.warn("Could not fetch user profile automatically", err);
+        username = 'User';
       }
     }
 
@@ -87,31 +69,45 @@ function LoginContent() {
     if (username) localStorage.setItem('username', username);
     if (userId) localStorage.setItem('user_id', userId);
 
-    // 4. Hard Redirect to Home
-    // We use window.location.href instead of router.push to force a full 
-    // state refresh, ensuring the Home page sees the new localStorage.
+    // 4. Hard Redirect to Home (Ensures state refresh)
     setTimeout(() => {
       window.location.href = '/'; 
     }, 800);
   };
 
-  // --- GITHUB HANDLER ---
+  // --- GITHUB LOGIN (With Double-Call Protection) ---
+  useEffect(() => {
+    const code = searchParams.get('code');
+    
+    // Only run if code exists AND we haven't processed it yet
+    if (code && !codeProcessed.current && !localStorage.getItem('auth_token')) {
+      codeProcessed.current = true; // Mark as done immediately
+      handleGithubLogin(code);
+    }
+    
+    if (searchParams.get('registered')) {
+      showToast('Account created successfully. Please login.', 'success');
+    }
+  }, [searchParams]);
+
   const handleGithubLogin = async (code: string) => {
-    setIsAuthenticating(true); // START ANIMATION
+    setIsAuthenticating(true);
     try {
       const response = await api.post('/auth/github/', { code });
       handleAuthSuccess(response.data);
     } catch (err) {
       console.error(err);
-      setIsAuthenticating(false); // STOP ANIMATION
-      showToast("GitHub authentication failed.");
+      setIsAuthenticating(false);
+      // Optional: clear the code from URL so user can try again easily
+      router.replace('/login'); 
+      showToast("GitHub authentication failed. Please try again.");
     }
   };
 
-  // --- GOOGLE HANDLER ---
+  // --- GOOGLE LOGIN ---
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
-      setIsAuthenticating(true); // START ANIMATION
+      setIsAuthenticating(true);
       try {
         const response = await api.post('/auth/google/', {
           access_token: tokenResponse.access_token,
@@ -119,40 +115,37 @@ function LoginContent() {
         handleAuthSuccess(response.data);
       } catch (err) {
         console.error(err);
-        setIsAuthenticating(false); // STOP ANIMATION
+        setIsAuthenticating(false);
         showToast("Google authentication failed.");
       }
     },
     onError: () => {
-      setIsAuthenticating(false);
-      showToast("Google Login Popup Closed or Failed.");
+      showToast("Google Login Popup Closed.");
     },
   });
 
-  // --- STANDARD FORM HANDLERS ---
+  // --- FORM LOGIN ---
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsAuthenticating(true); // START ANIMATION
+    setIsAuthenticating(true);
     
     try {
       const response = await api.post('/users/login/', formData);
       handleAuthSuccess(response.data);
     } catch (err: any) {
-      setIsAuthenticating(false); // STOP ANIMATION
+      setIsAuthenticating(false);
       showToast('Invalid credentials provided.');
     }
   };
 
   return (
     <>
-      {/* 1. FULL SCREEN LOADING ANIMATION */}
       {isAuthenticating && <LoadingWave />}
 
-      {/* 2. WARNING POPUP (TOAST) */}
       <Toast 
         message={toast.msg} 
         isVisible={toast.show} 
@@ -166,7 +159,7 @@ function LoginContent() {
           <h1 className="text-4xl font-heading mb-2 text-center">LOGIN</h1>
           <p className="text-center mb-6 font-base text-gray-600">Enter credentials to access account.</p>
 
-          {/* SOCIAL AUTH */}
+          {/* SOCIAL BUTTONS */}
           <div className="flex flex-col gap-3 mb-6">
             <button 
               onClick={() => googleLogin()}
@@ -190,7 +183,7 @@ function LoginContent() {
             <div className="h-px bg-gray-300 flex-1"></div>
           </div>
 
-          {/* CREDENTIALS FORM */}
+          {/* FORM */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-6">
             <Input 
               label="USERNAME" 
