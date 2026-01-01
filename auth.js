@@ -52,7 +52,11 @@ async function performSocialLogin(provider, code) {
         const response = await fetch(`${API_BASE}/auth/${provider}/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code: code }) 
+            // IT sends the exact URI used during the redirect to ensure a match
+            body: JSON.stringify({ 
+                code: code,
+                callback_url: REDIRECT_URI 
+            }) 
         });
         
         const data = await response.json();
