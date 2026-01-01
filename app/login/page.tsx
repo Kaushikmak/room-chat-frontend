@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/utils/axiosInstance';
-import { useAuth } from '@/context/AuthContext'; // Use Context
+import { useAuth } from '@/context/AuthContext';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Toast from '@/components/ui/Toast';
@@ -14,7 +14,7 @@ import { useGoogleLogin } from '@react-oauth/google';
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login } = useAuth(); // Get login function from context
+  const { login } = useAuth();
   
   // STATE
   const [formData, setFormData] = useState({ username: '', password: '' });
@@ -23,6 +23,7 @@ function LoginContent() {
     show: false, msg: '', type: 'error'
   });
 
+  // REF: Track code processing to prevent React Strict Mode double-calls
   const codeProcessed = useRef(false);
 
   // CONFIGURATION
@@ -33,33 +34,50 @@ function LoginContent() {
   const showToast = (msg: string, type: 'error' | 'success' = 'error') => setToast({ show: true, msg, type });
   const closeToast = () => setToast(prev => ({ ...prev, show: false }));
 
-  // OAUTH HANDLER
+  // --- OAUTH HANDLER ---
   useEffect(() => {
     const code = searchParams.get('code');
     const token = localStorage.getItem('auth_token');
 
+    // 1. Handle GitHub Code
     if (code && !codeProcessed.current && !token) {
-      codeProcessed.current = true;
+      codeProcessed.current = true; // Lock immediately
+      
+      // Clean URL immediately to prevent reuse on refresh
+      window.history.replaceState({}, document.title, '/login');
+      
       handleGithubLogin(code);
     }
     
+    // 2. Handle Registration Success
     if (searchParams.get('registered')) {
       showToast('Account created successfully. Terminal ready.', 'success');
+      // Clean URL
+      window.history.replaceState({}, document.title, '/login');
     }
   }, [searchParams]);
 
-  // HANDLERS
+  // --- HANDLERS ---
   const handleGithubLogin = async (code: string) => {
     setIsAuthenticating(true);
     try {
-      const response = await api.post('/auth/github/', { code });
+      // FIX: Send callback_url so backend can verify the request
+      const response = await api.post('/auth/github/', { 
+        code: code,
+        callback_url: REDIRECT_URI // Required by most adapters
+      });
+      
       const data = response.data;
-      // Use Context Login
       login(data.token || data.key, data);
-    } catch (err) {
+      
+    } catch (err: any) {
+      console.error("GitHub Error:", err.response?.data || err.message);
       setIsAuthenticating(false);
-      router.replace('/login');
-      showToast("GitHub Access Denied.");
+      
+      // Reset ref so user can try again if they really want to (requires clicking button again)
+      codeProcessed.current = false;
+      
+      showToast("GitHub Access Denied. Please try again.");
     }
   };
 
@@ -71,7 +89,6 @@ function LoginContent() {
           access_token: tokenResponse.access_token,
         });
         const data = response.data;
-        // Use Context Login
         login(data.token || data.key, data);
       } catch (err) {
         setIsAuthenticating(false);
@@ -87,7 +104,6 @@ function LoginContent() {
     try {
       const response = await api.post('/users/login/', formData);
       const data = response.data;
-      // Use Context Login
       login(data.token || data.key, data);
     } catch (err: any) {
       setIsAuthenticating(false);
@@ -111,14 +127,14 @@ function LoginContent() {
             <button 
               onClick={() => googleLogin()}
               disabled={isAuthenticating}
-              className="flex items-center justify-center gap-2 w-full bg-white text-black font-bold border-2 border-black py-3 shadow-neo-sm hover:bg-gray-50 transition-all active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
+              className="flex items-center justify-center gap-2 w-full bg-white text-black font-bold border-2 border-black py-3 shadow-neo-sm hover:bg-gray-50 transition-all active:shadow-none active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-50"
             >
               GOOGLE ACCESS
             </button>
 
             <a 
               href={`https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=user:email`}
-              className="flex items-center justify-center gap-2 w-full bg-[#24292e] text-white font-bold border-2 border-black py-3 shadow-neo-sm hover:bg-gray-800 transition-all active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
+              className={`flex items-center justify-center gap-2 w-full bg-[#24292e] text-white font-bold border-2 border-black py-3 shadow-neo-sm hover:bg-gray-800 transition-all active:shadow-none active:translate-x-[2px] active:translate-y-[2px] ${isAuthenticating ? 'pointer-events-none opacity-50' : ''}`}
             >
                GITHUB ACCESS
             </a>
