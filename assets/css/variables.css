@@ -1,6 +1,8 @@
 :root {
     /* Colors */
     --bg-color: #f0f0f0;
+    --box-bg: #ffffff;
+    --box-text: #000000;
     --dot-color: #cbcbcb;
     --main-accent: #FFEB3B;
     --secondary-accent: #FF4081;
@@ -15,6 +17,8 @@
 /* Dark Mode Overrides */
 [data-theme="dark"] {
     --bg-color: #121212;
+    --box-bg: #1e1e1e;
+    --box-text: #ffffff;
     --dot-color: #333333;
     --main-accent: #6200EE;
     --secondary-accent: #03DAC6;

@@ -1,10 +1,11 @@
 /* Base Reset */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--font-stack); background-color: var(--bg-color); padding: 20px; }
+body { font-family: var(--font-stack); background-color: var(--bg-color); }
 
 /* Components */
 .neo-box {
-    background: white;
+    background: var(--box-bg);
+    color: var(--box-text);
     border: var(--border-width) solid black;
     box-shadow: var(--shadow-offset) var(--shadow-offset) 0px 0px black;
     padding: 1.5rem;
@@ -26,21 +27,3 @@ body { font-family: var(--font-stack); background-color: var(--bg-color); paddin
     transform: translate(2px, 2px);
     box-shadow: 1px 1px 0px 0px black;
 }
-
-/* Status Messages */
-.status-box { text-align: center; font-weight: bold; }
-.status-box.success { background-color: #c8e6c9; }
-.status-box.error { background-color: var(--error-color); }
-.hidden { display: none !important; }
-
-/* Click Feedback Micro-interaction */
-.list-item:active {
-    transform: scale(0.98);
-    background-color: var(--secondary-accent);
-    color: white;
-}
-
-/* Scrollbar Styling for Neo-Brutalist look */
-.scroll-area::-webkit-scrollbar { width: 10px; }
-.scroll-area::-webkit-scrollbar-track { background: #eee; border-left: 2px solid black; }
-.scroll-area::-webkit-scrollbar-thumb { background: black; border: 2px solid white; }
