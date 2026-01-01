@@ -7,7 +7,6 @@ import api from '@/utils/axiosInstance';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { useGoogleLogin } from '@react-oauth/google';
-import { Github, Mail } from 'lucide-react'; // Icons
 
 function LoginContent() {
   const router = useRouter();
@@ -18,75 +17,67 @@ function LoginContent() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // --- 1. GITHUB CONFIG ---
-  const GITHUB_CLIENT_ID = "Ov23libTC9bolbUzZeBA"; 
-  const REDIRECT_URI = "https://www.room-chat.com/login";
+  // CONFIGURATION
+  // Ensure this matches your Vercel Environment Variables and GitHub Settings exactly
+  const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || "Ov23libTC9bolbUzZeBA"; 
+  const REDIRECT_URI = "https://www.room-chat.com/login"; 
 
-  // --- 2. HANDLE GITHUB CALLBACK ---
+  // --- HANDLE OAUTH CALLBACKS ---
   useEffect(() => {
+    // 1. Handle GitHub Code
     const code = searchParams.get('code');
-    // If we have a code and haven't processed it yet...
     if (code && !localStorage.getItem('auth_token')) {
       handleGithubLogin(code);
     }
     
-    // Check for registration success message
+    // 2. Handle Registration Success
     if (searchParams.get('registered')) {
-      setSuccess('Account created! Please login.');
+      setSuccess('Account created successfully. Please login.');
     }
   }, [searchParams]);
 
-  const handleGithubLogin = async (code: string) => {
-    setLoading(true);
-    try {
-      // Send the code to your backend
-      const response = await api.post('/auth/github/', {
-        code: code, // Your backend must handle the code exchange
-      });
-      handleAuthSuccess(response.data);
-    } catch (err) {
-      console.error(err);
-      setError("GitHub login failed. Try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // --- 3. GOOGLE LOGIN HOOK ---
-  const googleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setLoading(true);
-      try {
-        // Send access token to backend
-        const response = await api.post('/auth/google/', {
-          access_token: tokenResponse.access_token,
-        });
-        handleAuthSuccess(response.data);
-      } catch (err) {
-        console.error(err);
-        setError("Google login failed.");
-        setLoading(false);
-      }
-    },
-    onError: () => setError("Google login failed."),
-  });
-
-  // --- SHARED SUCCESS LOGIC ---
+  // --- AUTH HANDLERS ---
   const handleAuthSuccess = (data: any) => {
-    // Save Token (Adjust fields based on your exact API response)
-    // Sometimes social login returns 'key' instead of 'token'
     const token = data.token || data.key; 
     localStorage.setItem('auth_token', token);
     
-    // Sometimes social login doesn't return user details immediately. 
-    // You might need to fetch profile after this. For now, we assume it does:
     if (data.user_id) localStorage.setItem('user_id', data.user_id);
     if (data.username) localStorage.setItem('username', data.username);
 
     router.push('/');
   };
 
-  // --- STANDARD FORM HANDLERS ---
+  const handleGithubLogin = async (code: string) => {
+    setLoading(true);
+    try {
+      const response = await api.post('/auth/github/', { code });
+      handleAuthSuccess(response.data);
+    } catch (err) {
+      console.error(err);
+      setError("GitHub authentication failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setLoading(true);
+      try {
+        const response = await api.post('/auth/google/', {
+          access_token: tokenResponse.access_token,
+        });
+        handleAuthSuccess(response.data);
+      } catch (err) {
+        console.error(err);
+        setError("Google authentication failed.");
+        setLoading(false);
+      }
+    },
+    onError: () => setError("Google authentication failed."),
+  });
+
+  // --- FORM HANDLERS ---
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -100,7 +91,7 @@ function LoginContent() {
       const response = await api.post('/users/login/', formData);
       handleAuthSuccess(response.data);
     } catch (err: any) {
-      setError('Invalid username or password.');
+      setError('Invalid credentials provided.');
     } finally {
       setLoading(false);
     }
@@ -110,26 +101,35 @@ function LoginContent() {
     <div className="flex items-center justify-center min-h-screen bg-bg px-4 py-10">
       <div className="w-full max-w-md bg-white border-4 border-black shadow-neo p-8">
         
-        <h1 className="text-4xl font-heading mb-2 text-center">WELCOME</h1>
-        <p className="text-center mb-6 font-base text-gray-600">Login to continue.</p>
+        <h1 className="text-4xl font-heading mb-2 text-center">LOGIN</h1>
+        <p className="text-center mb-6 font-base text-gray-600">Enter credentials to access account.</p>
 
-        {success && <div className="mb-4 p-3 bg-green-100 border-2 border-black text-green-800 font-bold text-sm">{success}</div>}
-        {error && <div className="mb-4 p-3 bg-red-100 border-2 border-black text-red-600 font-bold text-sm">⚠️ {error}</div>}
+        {success && (
+          <div className="mb-4 p-3 bg-green-100 border-2 border-black text-green-800 font-bold text-sm">
+             {success}
+          </div>
+        )}
 
-        {/* --- SOCIAL BUTTONS --- */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border-2 border-black text-red-600 font-bold text-sm">
+            Error: {error}
+          </div>
+        )}
+
+        {/* SOCIAL AUTH */}
         <div className="flex flex-col gap-3 mb-6">
           <button 
             onClick={() => googleLogin()}
-            className="flex items-center justify-center gap-3 w-full bg-white text-black font-bold border-2 border-black py-3 shadow-neo-sm hover:bg-gray-50 transition-all active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
+            className="flex items-center justify-center gap-2 w-full bg-white text-black font-bold border-2 border-black py-3 shadow-neo-sm hover:bg-gray-50 transition-all active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
           >
-            <Mail className="w-5 h-5" /> Sign in with Google
+            GOOGLE SIGN IN
           </button>
 
           <a 
             href={`https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=user:email`}
-            className="flex items-center justify-center gap-3 w-full bg-[#24292e] text-white font-bold border-2 border-black py-3 shadow-neo-sm hover:bg-gray-800 transition-all active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
+            className="flex items-center justify-center gap-2 w-full bg-[#24292e] text-white font-bold border-2 border-black py-3 shadow-neo-sm hover:bg-gray-800 transition-all active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
           >
-            <Github className="w-5 h-5" /> Sign in with GitHub
+             GITHUB SIGN IN
           </a>
         </div>
 
@@ -139,36 +139,36 @@ function LoginContent() {
           <div className="h-px bg-gray-300 flex-1"></div>
         </div>
 
-        {/* --- STANDARD FORM --- */}
+        {/* CREDENTIALS FORM */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           <Input 
-            label="Username" 
+            label="USERNAME" 
             name="username"
-            placeholder="e.g. tastytaco"
+            placeholder="Username"
             value={formData.username}
             onChange={handleChange}
             required
           />
           
           <Input 
-            label="Password" 
+            label="PASSWORD" 
             name="password"
             type="password"
-            placeholder="••••••••"
+            placeholder="Password"
             value={formData.password}
             onChange={handleChange}
             required
           />
 
           <Button type="submit" disabled={loading} className="w-full mt-2">
-            {loading ? 'LOGGING IN...' : 'LOGIN NOW'}
+            {loading ? 'AUTHENTICATING...' : 'LOGIN'}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm font-base">
-          Don't have an account?{' '}
+          No account?{' '}
           <Link href="/register" className="underline font-bold hover:text-main">
-            Register here
+            Register New Account
           </Link>
         </p>
       </div>
@@ -178,7 +178,7 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div>Loading Interface...</div>}>
       <LoginContent />
     </Suspense>
   );

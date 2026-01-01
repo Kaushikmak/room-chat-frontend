@@ -8,18 +8,23 @@ import Link from 'next/link';
 export default function Home() {
   const router = useRouter();
   const [username, setUsername] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Check login status on load
+  // Check authentication status on mount
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
     const user = localStorage.getItem('username');
+    
     if (token && user) {
       setUsername(user);
     }
+    
+    // authentication check complete
+    setIsLoading(false);
   }, []);
 
   const handleLogout = () => {
-    // 1. Clear Storage
+    // 1. Clear Local Storage
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user_id');
     localStorage.removeItem('username');
@@ -27,43 +32,51 @@ export default function Home() {
     // 2. Reset State
     setUsername(null);
     
-    // 3. Refresh or Redirect
+    // 3. Redirect to Login
     router.push('/login');
   };
+
+  // Prevent flicker while checking auth state
+  if (isLoading) {
+    return <div className="min-h-screen bg-bg"></div>; 
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-bg p-4">
       
       <div className="max-w-2xl w-full bg-white border-4 border-black shadow-neo p-8 text-center">
-        <h1 className="text-5xl font-heading mb-6">ROOM CHAT 💬</h1>
         
         {username ? (
-          // VIEW FOR LOGGED IN USERS
-          <div className="flex flex-col gap-4">
-            <p className="text-xl">
-              Welcome back, <span className="font-bold text-main">{username}</span>!
-            </p>
-            <div className="h-px bg-black w-full my-4"></div>
+          // --- AUTHENTICATED HOME PAGE ---
+          <div className="flex flex-col gap-6">
+            <h1 className="text-4xl font-heading">DASHBOARD</h1>
+            <div className="h-px bg-black w-full"></div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-               <Button variant="primary">Enter Chat Rooms</Button>
-               <Button variant="outline" onClick={handleLogout}>Logout</Button>
+            <p className="text-xl">
+              User: <span className="font-bold text-main">{username}</span>
+            </p>
+            
+            <div className="flex flex-col gap-4">
+               <Button variant="primary">ENTER ROOMS</Button>
+               <Button variant="outline" onClick={handleLogout}>LOGOUT</Button>
             </div>
           </div>
         ) : (
-          // VIEW FOR GUESTS
-          <div className="flex flex-col gap-4">
+          // --- GUEST LANDING PAGE ---
+          <div className="flex flex-col gap-6">
+            <h1 className="text-4xl font-heading">ROOM CHAT</h1>
+            <div className="h-px bg-black w-full"></div>
+            
             <p className="text-lg text-gray-600">
-              Join the conversation. Create rooms, chat with friends, and discuss topics.
+              Authentication required. Please login or register to access the application.
             </p>
-            <div className="h-px bg-black w-full my-4"></div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/login">
-                <Button variant="primary" className="w-full sm:w-auto">Login</Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-4">
+              <Link href="/login" className="w-full sm:w-auto">
+                <Button variant="primary" className="w-full">LOGIN</Button>
               </Link>
-              <Link href="/register">
-                <Button variant="secondary" className="w-full sm:w-auto">Register</Button>
+              <Link href="/register" className="w-full sm:w-auto">
+                <Button variant="secondary" className="w-full">REGISTER</Button>
               </Link>
             </div>
           </div>
