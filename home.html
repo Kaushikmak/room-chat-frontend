@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Room Chat - Home</title>
+</head>
+<body>
+    <nav>
+        <h2>Room Chat Dashboard</h2>
+        <button id="logout-btn">Logout</button>
+    </nav>
+    <div id="content">
+        </div>
+
+    <script>
+        // Guard: Check for token
+        if (!localStorage.getItem('token')) {
+            window.location.href = 'index.html';
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('token');
+            window.location.href = 'index.html';
+        });
+
+        // Example Authenticated Request
+        async function fetchRooms() {
+            const res = await fetch('https://room-chat-api-eudf.onrender.com/api/rooms/', {
+                headers: { 'Authorization': `Token ${localStorage.getItem('token')}` }
+            });
+            const rooms = await res.json();
+            console.log(rooms);
+        }
+        fetchRooms();
+    </script>
+</body>
+</html>
