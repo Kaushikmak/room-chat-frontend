@@ -51,17 +51,47 @@ function LoginContent() {
   }, [searchParams]);
 
   // --- SHARED AUTH SUCCESS LOGIC ---
-  const handleAuthSuccess = (data: any) => {
+  // --- SHARED AUTH SUCCESS LOGIC ---
+  const handleAuthSuccess = async (data: any) => {
+    // 1. Save the Token first (Critical for the next API call)
     const token = data.token || data.key; 
+    if (!token) {
+      showToast("Login failed: No token received from server.");
+      setIsAuthenticating(false);
+      return;
+    }
     localStorage.setItem('auth_token', token);
-    
-    if (data.user_id) localStorage.setItem('user_id', data.user_id);
-    if (data.username) localStorage.setItem('username', data.username);
 
-    // Keep the animation playing for a brief moment before redirecting
-    // to ensure a smooth transition
+    // 2. Check if we need to fetch User Details manually
+    // (Social Login often misses this, while Form Login usually has it)
+    let username = data.username;
+    let userId = data.user_id;
+
+    if (!username) {
+      try {
+        // Fetch user profile using the token we just saved
+        // Try the standard dj-rest-auth endpoint first
+        const userRes = await api.get('/auth/user/');
+        
+        username = userRes.data.username;
+        userId = userRes.data.pk || userRes.data.id;
+        
+      } catch (err) {
+        console.warn("Could not fetch user details automatically.", err);
+        // Fallback: If we really can't get a username, use 'User' so the app doesn't break
+        username = 'User'; 
+      }
+    }
+
+    // 3. Save User Data
+    if (username) localStorage.setItem('username', username);
+    if (userId) localStorage.setItem('user_id', userId);
+
+    // 4. Hard Redirect to Home
+    // We use window.location.href instead of router.push to force a full 
+    // state refresh, ensuring the Home page sees the new localStorage.
     setTimeout(() => {
-      router.push('/'); 
+      window.location.href = '/'; 
     }, 800);
   };
 
