@@ -20,7 +20,7 @@ function LoginContent() {
 
   // --- 1. GITHUB CONFIG ---
   const GITHUB_CLIENT_ID = "Ov23libTC9bolbUzZeBA"; 
-  const REDIRECT_URI = "http://localhost:3000/login";
+  const REDIRECT_URI = "https://www.room-chat.com/login";
 
   // --- 2. HANDLE GITHUB CALLBACK ---
   useEffect(() => {
