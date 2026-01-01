@@ -1,36 +1,104 @@
+/* --- NEO-BRUTALISM THEME --- */
+
+/* COMPONENT: Box */
 .neo-box {
     background: var(--box-bg);
     color: var(--box-text);
     border: var(--border-width) solid black;
-    box-shadow: var(--shadow-offset) var(--shadow-offset) 0px 0px black;
-    padding: 1rem;
+    box-shadow: var(--shadow-offset) var(--shadow-offset) 0px 0px rgba(0,0,0,1);
+    padding: 20px;
+    transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.list-item {
-    transition: all 0.1s ease;
+/* INTERACTIVE: Buttons */
+.neo-btn {
+    font-family: var(--font-stack);
+    font-weight: 800;
+    text-transform: uppercase;
+    border: var(--border-width) solid black;
+    padding: 10px 20px;
+    background: white;
     cursor: pointer;
-    padding: 10px;
-    margin-bottom: 8px;
-    border: 2px solid transparent;
+    box-shadow: 3px 3px 0px 0px black;
+    transition: all 0.15s ease;
 }
 
-.list-item:hover {
-    background: var(--main-accent) !important;
-    border: 2px solid black;
-    transform: translate(-3px, -3px);
-    box-shadow: 3px 3px 0px black;
+.neo-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0px 0px black;
 }
 
-.mention-tag { color: var(--secondary-accent); font-weight: 900; }
+.neo-btn:active {
+    transform: translate(0, 0);
+    box-shadow: 0px 0px 0px 0px black;
+}
 
-/* Message Alignment */
-.message-row { display: flex; width: 100%; margin-bottom: 10px; }
+.neo-btn.active {
+    background: var(--secondary-accent);
+    color: black;
+    box-shadow: inset 3px 3px 0px black;
+}
+
+/* INPUTS */
+input {
+    font-family: var(--font-stack);
+    border: var(--border-width) solid black;
+    padding: 12px;
+    font-size: 1rem;
+    outline: none;
+    background: var(--bg-color);
+    box-shadow: 3px 3px 0px 0px rgba(0,0,0,0.1);
+    transition: box-shadow 0.2s;
+    width: 100%;
+}
+
+input:focus {
+    box-shadow: 5px 5px 0px 0px black;
+    background: white;
+}
+
+/* SCROLLBARS */
+::-webkit-scrollbar { width: 12px; }
+::-webkit-scrollbar-track { background: var(--bg-color); border-left: 2px solid black; }
+::-webkit-scrollbar-thumb { background: black; border: 2px solid var(--bg-color); }
+::-webkit-scrollbar-thumb:hover { background: var(--main-accent); }
+
+/* LIST ITEMS */
+.list-item {
+    padding: 12px;
+    border-bottom: 2px solid black;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.list-item:hover { background-color: var(--main-accent); color: white; }
+.list-item:last-child { border-bottom: none; }
+
+/* CHAT BUBBLES */
+.message-row { display: flex; width: 100%; margin-bottom: 15px; }
 .message-row.mine { justify-content: flex-end; }
-.message-row.theirs { justify-content: flex-start; }
-
 .message-bubble {
-    max-width: 75%; padding: 10px; border: 2px solid black;
-    box-shadow: 3px 3px 0px black;
+    max-width: 80%;
+    padding: 15px;
+    border: 2px solid black;
+    box-shadow: 4px 4px 0px black;
+    font-weight: 500;
+    line-height: 1.4;
 }
-.message-bubble.mine { background: var(--success-color); }
-.message-bubble.theirs { background: var(--box-bg); }
+.message-bubble.mine { background: var(--success-color); color: black; }
+.message-bubble.theirs { background: white; color: black; }
+.mention-tag { font-size: 0.75rem; font-weight: 900; opacity: 0.7; display: block; margin-bottom: 5px; }
+
+/* UTILS */
+.avatar-circle {
+    width: 40px; height: 40px;
+    background: black; color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold;
+    border: 2px solid white;
+    cursor: pointer;
+}
+.status-box { margin-top: 10px; font-weight: bold; text-align: center; }
+.status-box.success { background-color: var(--success-color); }
+.status-box.error { background-color: var(--error-color); }

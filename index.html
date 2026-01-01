@@ -4,46 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Room Chat | Enter the Void</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="assets/css/variables.css">
-    <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/theme.css">
     <style>
-        @keyframes float {
-            0% { transform: translate(0, 0) rotate(0deg); }
-            33% { transform: translate(10px, -15px) rotate(2deg); }
-            66% { transform: translate(-5px, 10px) rotate(-1deg); }
-            100% { transform: translate(0, 0) rotate(0deg); }
-        }
-        @keyframes glitch {
-            0% { text-shadow: 2px 2px var(--secondary-accent); }
-            50% { text-shadow: -2px -2px var(--main-accent); }
-            100% { text-shadow: 2px 2px var(--secondary-accent); }
-        }
+        /* Landing Specific Overrides */
         .landing-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: var(--bg-color); z-index: -1; overflow: hidden;
-        }
-        .shape {
-            position: absolute; border: 4px solid black;
-            box-shadow: 8px 8px 0px black; animation: float 8s infinite ease-in-out;
+            z-index: -1; overflow: hidden;
         }
         .hero-title {
-            font-size: 5rem; font-weight: 900; line-height: 1;
-            margin-bottom: 2rem; animation: glitch 0.5s infinite; text-transform: uppercase;
+            font-size: clamp(3rem, 10vw, 6rem); /* Responsive Font */
+            font-weight: 900;
+            line-height: 0.9;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            text-shadow: 4px 4px 0px var(--main-accent);
         }
-        .big-btn { font-size: 2rem; padding: 20px 50px; background: var(--main-accent); text-decoration: none; color: black; }
     </style>
 </head>
 <body>
     <div class="landing-bg">
-        <div class="shape" style="width: 100px; height: 100px; top: 10%; left: 15%; background: var(--secondary-accent);"></div>
-        <div class="shape" style="width: 150px; height: 50px; bottom: 20%; right: 10%; background: var(--success-color);"></div>
+        <div style="position: absolute; top: 10%; left: 5%; width: 100px; height: 100px; background: var(--secondary-accent); border: 3px solid black; box-shadow: 6px 6px 0 black;"></div>
+        <div style="position: absolute; bottom: 15%; right: 10%; width: 150px; height: 150px; background: var(--success-color); border-radius: 50%; border: 3px solid black;"></div>
     </div>
-    <div class="main-container">
-        <div class="neo-box" style="text-align: center; transform: rotate(-2deg);">
-            <h1 class="hero-title">Room Chat</h1>
-            <p style="font-weight: 900; margin-bottom: 30px;">ENCRYPTED. UNFILTERED. RAW.</p>
-            <a href="pages/login.html" class="neo-btn big-btn">INITIALIZE CONNECTION</a>
+
+    <div class="main-container" style="padding-top: 0;"> <div class="neo-box" style="text-align: center; max-width: 600px; transform: rotate(-1deg);">
+            <h1 class="hero-title">Room<br>Chat</h1>
+            <p style="font-weight: 700; font-size: 1.2rem; margin-bottom: 40px; letter-spacing: 1px;">ENCRYPTED // UNFILTERED // RAW</p>
+            <a href="pages/login.html" class="neo-btn" style="font-size: 1.5rem; padding: 20px 40px; display: inline-block; text-decoration: none; color: black;">INITIALIZE</a>
         </div>
     </div>
 </body>

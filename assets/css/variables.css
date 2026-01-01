@@ -1,35 +1,51 @@
 :root {
-    --bg-color: #f0f0f0;
-    --box-bg: #ffffff;
+    /* TYPOGRAPHY */
+    --font-stack: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'Courier New', monospace;
+
+    /* PALETTE - NEO BRUTALISM */
+    --bg-color: #f4f3ef;       /* Warm Off-white */
+    --box-bg: #ffffff;         /* Pure White */
     --box-text: #000000;
-    --dot-color: #cbcbcb;
-    --main-accent: #FFEB3B;
-    --secondary-accent: #FF4081;
-    --success-color: #00E676;
-    --error-color: #ffcdd2;
-    --text-color: #000000;
+    
+    /* ACCENTS */
+    --main-accent: #8B5CF6;    /* Violet */
+    --secondary-accent: #F472B6; /* Pink */
+    --success-color: #34D399;  /* Emerald */
+    --error-color: #F87171;    /* Red */
+    --text-color: #18181b;     /* Near Black */
+
+    /* DIMENSIONS */
     --border-width: 3px;
     --shadow-offset: 5px;
-    --font-stack: 'Courier New', Courier, monospace;
+    --radius: 0px;             /* Hard edges for brutalism */
+    --nav-height: 70px;
 }
 
 [data-theme="dark"] {
-    --bg-color: #121212;
-    --box-bg: #1e1e1e;
-    --box-text: #ffffff;
-    --dot-color: #333333;
-    --main-accent: #6200EE;
-    --secondary-accent: #03DAC6;
-    --text-color: #ffffff;
-    --success-color: #018786;
-    --error-color: #cf6679;
+    --bg-color: #18181b;
+    --box-bg: #27272a;
+    --box-text: #f4f4f5;
+    --main-accent: #A78BFA;
+    --secondary-accent: #FBCFE8;
+    --text-color: #f4f4f5;
+    --success-color: #10B981;
+    --error-color: #EF4444;
+}
+
+/* GLOBAL RESET */
+*, *::before, *::after {
+    box-sizing: border-box;
 }
 
 body {
     background-color: var(--bg-color);
-    background-image: radial-gradient(var(--dot-color) 1px, transparent 1px);
-    background-size: 20px 20px;
     color: var(--text-color);
-    transition: background-color 0.3s ease;
-    margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden;
+    font-family: var(--font-stack);
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    width: 100vw;
+    overflow-x: hidden;
+    transition: background-color 0.2s ease;
 }
