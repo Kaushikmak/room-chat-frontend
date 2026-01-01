@@ -3,70 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Room Chat | Terminal</title>
+    <title>Room Chat | Hub</title>
     <link rel="stylesheet" href="../assets/css/variables.css">
     <link rel="stylesheet" href="../assets/css/theme.css">
     <link rel="stylesheet" href="../assets/css/layout.css">
     <style>
+        .full-screen-container {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+            width: 100vw;
+            padding: 20px;
+            overflow: hidden;
+        }
         .home-grid {
-            display: grid; grid-template-columns: 280px 1fr 300px;
-            gap: 20px; height: calc(100vh - 120px); width: 100%; max-width: 1400px;
+            display: grid;
+            grid-template-columns: 300px 1fr 320px;
+            gap: 20px;
+            height: 100%;
+            overflow: hidden;
         }
-        .list-item {
-            transition: all 0.2s ease; cursor: pointer; padding: 10px; border: 2px solid transparent;
-        }
-        .list-item:hover {
-            background: var(--main-accent); transform: translate(-2px, -2px);
-            box-shadow: 4px 4px 0px black; border-color: black;
-        }
-        .scroll-area { overflow-y: auto; padding-right: 10px; }
-        .avatar-circle {
-            width: 45px; height: 45px; background: var(--secondary-accent); border: 3px solid black;
-            display: flex; align-items: center; justify-content: center; font-weight: 900; cursor: pointer; box-shadow: 3px 3px 0px black;
+        .scroll-area { overflow-y: auto; height: 100%; }
+        .mention-tag { color: var(--secondary-accent); font-weight: 900; }
+        
+        /* DM Popup Styles */
+        #dm-popup {
+            position: fixed; bottom: 20px; right: 20px;
+            width: 300px; height: 400px; z-index: 1000;
+            display: flex; flex-direction: column;
         }
     </style>
 </head>
 <body>
-    <nav class="neo-box navbar" style="max-width: 1400px; margin: 0 auto 20px auto;">
-        <div class="brand">ROOM CHAT</div>
-        <div class="nav-controls">
-            <div id="user-avatar" class="avatar-circle" onclick="window.location.href='dashboard.html'">?</div>
-        </div>
-    </nav>
-    <div class="main-container" style="justify-content: flex-start; min-height: auto;">
+    <div class="full-screen-container">
+        <nav class="neo-box navbar">
+            <div class="brand" onclick="window.location.href='home.html'" style="cursor:pointer">ROOM CHAT</div>
+            <div class="nav-controls">
+                <div id="user-avatar" class="avatar-circle" onclick="window.location.href='dashboard.html'">?</div>
+            </div>
+        </nav>
+
         <div class="home-grid">
-            <aside class="neo-box sidebar-left scroll-area">
-                <h3>TOPICS</h3>
-                <div id="topics-list" style="margin-bottom: 20px;"></div>
-                <hr style="border: 1px solid black; margin-bottom: 15px;">
-                <h3>ROOMS</h3>
-                <div class="input-group" style="margin-bottom: 10px;">
-                    <input type="text" id="room-search" placeholder="Filter signal..." oninput="window.filterRooms()">
+            <aside class="neo-box scroll-area">
+                <h3>NAVIGATE</h3>
+                <div class="auth-tabs">
+                    <button class="neo-btn tab active" onclick="showTab('rooms')">ROOMS</button>
+                    <button class="neo-btn tab" onclick="showTab('dms')">DMS</button>
                 </div>
-                <button class="neo-btn" style="width: 100%; margin-bottom: 15px;">+ CREATE ROOM</button>
-                <div id="rooms-list"></div>
+                <div id="rooms-nav-content">
+                    <div id="topics-list"></div>
+                    <hr style="border:1px solid black; margin:15px 0">
+                    <div id="rooms-list"></div>
+                </div>
+                <div id="dms-nav-content" class="hidden">
+                    <div id="dm-rooms-list"></div>
+                </div>
             </aside>
-            <main class="neo-box main-feed scroll-area" id="active-room-container">
-                <div id="room-header" style="border-bottom: 3px solid black; margin-bottom: 15px; padding-bottom: 10px;">
-                    <h2 id="active-room-name">SELECT A CHANNEL</h2>
-                    <span id="active-room-topic" class="user-tag">---</span>
+
+            <main class="neo-box scroll-area" style="display:flex; flex-direction:column">
+                <div id="room-header" style="border-bottom:3px solid black; padding-bottom:10px">
+                    <h2 id="active-room-name">TERMINAL IDLE</h2>
                 </div>
-                <div id="messages-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
-                <div id="message-input-area" class="hidden" style="margin-top: 20px;">
-                    <form onsubmit="window.sendMessage(event)" style="display: flex; gap: 10px;">
-                        <input type="text" id="msg-body" placeholder="Type transmission..." style="flex: 1; padding: 10px; border: 3px solid black;">
-                        <button type="submit" class="neo-btn" style="background: var(--success-color);">SEND</button>
-                    </form>
-                </div>
+                <div id="messages-container" style="flex:1; margin-top:15px" class="scroll-area"></div>
+                <form id="chat-form" class="hidden" onsubmit="window.sendMessage(event)" style="display:flex; gap:10px; padding-top:15px">
+                    <input type="text" id="msg-body" placeholder="Transmission..." style="flex:1; border:3px solid black; padding:10px">
+                    <button type="submit" class="neo-btn" style="background:var(--success-color)">SEND</button>
+                </form>
             </main>
-            <aside class="neo-box sidebar-right scroll-area">
+
+            <aside class="neo-box scroll-area">
                 <h3>FRIENDS</h3>
-                <div id="friends-list" style="margin-bottom: 20px;"></div>
-                <h3>LATEST ACTIVITY</h3>
+                <div id="friends-list"></div>
+                <hr style="border:1px solid black; margin:15px 0">
+                <h3>GLOBAL SIGNAL</h3>
                 <div id="activity-feed"></div>
             </aside>
         </div>
     </div>
+
+    <div id="dm-popup" class="neo-box hidden">
+        <div style="display:flex; justify-content:space-between; border-bottom:2px solid black">
+            <span id="dm-target-name">@USER</span>
+            <button onclick="closeDMPopup()" style="background:none; border:none; cursor:pointer; font-weight:900">X</button>
+        </div>
+        <div id="dm-popup-messages" class="scroll-area" style="flex:1; font-size:0.8rem; margin:10px 0"></div>
+        <form onsubmit="sendPopupDM(event)" style="display:flex; gap:5px">
+            <input type="text" id="popup-dm-input" style="flex:1; border:2px solid black; padding:5px">
+            <button type="submit" class="neo-btn" style="padding:5px">-></button>
+        </form>
+    </div>
+
     <script type="module" src="../scripts/home.js"></script>
 </body>
 </html>

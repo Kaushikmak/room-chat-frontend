@@ -1,37 +1,42 @@
 import { API } from '../assets/js/api.js';
-import { UI } from '../assets/js/ui.js';
 
 let currentRoomId = null;
+let activeDMTarget = null;
 
 async function init() {
     if (!API.isAuthenticated()) window.location.href = 'login.html';
     setAvatar();
+    await fetchContent();
+    setInterval(fetchMessagesSilently, 5000); // Polling for real-time feel
+}
+
+async function fetchContent() {
     await Promise.all([fetchTopics(), fetchRooms(), fetchFriends(), fetchActivity()]);
 }
 
-function setAvatar() {
-    const username = localStorage.getItem('username') || "U";
-    document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase();
-}
-
-async function fetchTopics() {
-    const res = await API.request('/api/topics/');
-    if (res.ok) {
-        document.getElementById('topics-list').innerHTML = res.data.map(t => `
-            <div class="list-item"># ${t.name.toUpperCase()}</div>
-        `).join('');
-    }
-}
+window.showTab = (type) => {
+    document.getElementById('rooms-nav-content').classList.toggle('hidden', type !== 'rooms');
+    document.getElementById('dms-nav-content').classList.toggle('hidden', type !== 'dms');
+};
 
 async function fetchRooms() {
     const res = await API.request('/api/rooms/');
     if (res.ok) {
-        document.getElementById('rooms-list').innerHTML = res.data.map(r => `
-            <div class="list-item" onclick="window.loadRoom('${r.id}')">
-                <strong>${r.name}</strong><br><small>HOST: ${r.host.username}</small>
-            </div>
-        `).join('');
+        // Public Rooms
+        document.getElementById('rooms-list').innerHTML = res.data
+            .filter(r => !r.is_direct_message)
+            .map(r => `<div class="list-item" onclick="window.loadRoom('${r.id}')">${r.name}</div>`).join('');
+        
+        // DM Rooms (Separate Tab)
+        document.getElementById('dm-rooms-list').innerHTML = res.data
+            .filter(r => r.is_direct_message)
+            .map(r => `<div class="list-item" onclick="window.loadRoom('${r.id}')">${r.name}</div>`).join('');
     }
+}
+
+// Colored @mentions logic
+function formatMessage(body) {
+    return body.replace(/@(\w+)/g, '<span class="mention-tag">@$1</span>');
 }
 
 window.loadRoom = async (id) => {
@@ -39,56 +44,41 @@ window.loadRoom = async (id) => {
     const res = await API.request(`/api/rooms/${id}/`);
     if (res.ok) {
         document.getElementById('active-room-name').textContent = res.data.name;
-        document.getElementById('active-room-topic').textContent = res.data.topic?.name || "GENERAL";
-        document.getElementById('message-input-area').classList.remove('hidden');
+        document.getElementById('chat-form').classList.remove('hidden');
         await fetchMessages(id);
     }
 };
 
-async function fetchMessages(roomId) {
-    const res = await API.request(`/api/rooms/${roomId}/messages/`);
+async function fetchMessages(id) {
+    const res = await API.request(`/api/rooms/${id}/messages/`);
     if (res.ok) {
-        document.getElementById('messages-container').innerHTML = res.data.map(m => `
-            <div class="neo-box" style="padding: 10px; margin-bottom: 5px;">
-                <strong>${m.user.username}</strong>: ${m.body}
+        const container = document.getElementById('messages-container');
+        container.innerHTML = res.data.map(m => `
+            <div class="neo-box" style="padding:10px; margin-bottom:5px">
+                <span class="mention-tag">@${m.user.username}</span>: ${formatMessage(m.body)}
             </div>
         `).join('');
+        container.scrollTop = container.scrollHeight;
     }
 }
 
-window.sendMessage = async (e) => {
-    e.preventDefault();
-    const input = document.getElementById('msg-body');
-    if (!input.value || !currentRoomId) return;
-    const res = await API.request(`/api/rooms/${currentRoomId}/messages/`, 'POST', { body: input.value }, true);
-    if (res.ok) { input.value = ''; await fetchMessages(currentRoomId); }
+// DM Popup Launcher
+window.openDM = async (username) => {
+    const res = await API.request('/api/chat/start/', 'POST', { username }, true);
+    if (res.ok) {
+        activeDMTarget = username;
+        document.getElementById('dm-target-name').textContent = `@${username}`;
+        document.getElementById('dm-popup').classList.remove('hidden');
+        // Fetch logic for popup...
+    }
 };
 
-async function fetchFriends() {
-    const res = await API.request('/api/users/friends/', 'GET', null, true);
-    if (res.ok) {
-        document.getElementById('friends-list').innerHTML = res.data.map(f => `
-            <div class="list-item">@${f.friend.username}</div>
-        `).join('');
-    }
-}
+window.closeDMPopup = () => document.getElementById('dm-popup').classList.add('hidden');
 
-async function fetchActivity() {
-    const res = await API.request('/api/activity/');
-    if (res.ok) {
-        document.getElementById('activity-feed').innerHTML = res.data.map(a => `
-            <div class="list-item" style="font-size: 0.8rem; border-left: 4px solid var(--secondary-accent);">
-                <strong>${a.user.username}</strong> @ ${a.room}:<br>${a.body.substring(0, 40)}...
-            </div>
-        `).join('');
-    }
+// Ensure Navbar consistency back to Home
+function setAvatar() {
+    const username = localStorage.getItem('username') || "U";
+    document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase();
 }
-
-window.filterRooms = () => {
-    const query = document.getElementById('room-search').value.toLowerCase();
-    document.querySelectorAll('#rooms-list .list-item').forEach(item => {
-        item.style.display = item.textContent.toLowerCase().includes(query) ? 'block' : 'none';
-    });
-};
 
 init();
