@@ -1,9 +1,86 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta http-equiv="refresh" content="0; url=pages/login.html" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room Chat | Enter the Void</title>
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <link rel="stylesheet" href="assets/css/theme.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <style>
+        /* Landing Page Specific Animations */
+        @keyframes float {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(10px, -15px) rotate(2deg); }
+            66% { transform: translate(-5px, 10px) rotate(-1deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        @keyframes glitch {
+            0% { text-shadow: 2px 2px var(--secondary-accent); }
+            25% { text-shadow: -2px -2px var(--main-accent); }
+            50% { text-shadow: 4px 1px var(--success-color); }
+            75% { text-shadow: -1px -3px var(--secondary-accent); }
+            100% { text-shadow: 2px 2px var(--secondary-accent); }
+        }
+
+        .landing-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--bg-color);
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .shape {
+            position: absolute;
+            border: 4px solid black;
+            box-shadow: 8px 8px 0px black;
+            animation: float 8s infinite ease-in-out;
+        }
+
+        .hero-title {
+            font-size: 5rem;
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: 2rem;
+            animation: glitch 0.5s infinite;
+            text-transform: uppercase;
+        }
+
+        .cta-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            animation: float 6s infinite reverse;
+        }
+
+        .big-btn {
+            font-size: 2rem;
+            padding: 20px 50px;
+            background: var(--main-accent);
+            text-decoration: none;
+            color: black;
+            display: inline-block;
+        }
+    </style>
 </head>
 <body>
-    <p>Redirecting to <a href="pages/login.html">login...</a></p>
+    <div class="landing-bg">
+        <div class="shape" style="width: 100px; height: 100px; top: 10%; left: 15%; background: var(--secondary-accent);"></div>
+        <div class="shape" style="width: 150px; height: 50px; bottom: 20%; right: 10%; background: var(--success-color); animation-delay: 2s;"></div>
+        <div class="shape" style="width: 80px; height: 80px; top: 40%; right: 25%; background: var(--main-accent); border-radius: 50%; animation-delay: 4s;"></div>
+    </div>
+
+    <div class="main-container">
+        <div class="neo-box" style="text-align: center; transform: rotate(-2deg);">
+            <h1 class="hero-title">Room Chat</h1>
+            <p style="font-weight: 900; margin-bottom: 30px;">ENCRYPTED. UNFILTERED. RAW.</p>
+            
+            <div class="cta-container">
+                <a href="pages/login.html" class="neo-btn big-btn">INITIALIZE CONNECTION</a>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
