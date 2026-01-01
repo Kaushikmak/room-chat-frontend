@@ -121,3 +121,35 @@
 }
 
 .button-group { display: flex; gap: 10px; }
+
+/* Update existing Navbar */
+.navbar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--main-accent);
+    padding: 10px 20px;
+    border: 3px solid black;
+    box-shadow: 5px 5px 0px black;
+}
+
+/* User Tag (Used for room topics/friend status) */
+.user-tag {
+    font-weight: bold;
+    background: black;
+    color: white;
+    padding: 3px 8px;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+}
+
+/* Ensure main container handles the 3-column height correctly */
+.main-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
+    padding: 0 20px;
+}
