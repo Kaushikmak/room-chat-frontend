@@ -50,7 +50,7 @@ window.handleRegister = async (e) => {
 window.initiateGoogleLogin = () => {
     const params = new URLSearchParams({
         client_id: CONFIG.GOOGLE_CLIENT_ID,
-        redirect_uri: CONFIG.FRONTEND_URL,
+        redirect_uri: CONFIG.FRONTEND_URL, // Points to login.html
         response_type: 'code',
         scope: 'email profile',
         prompt: 'select_account'
@@ -59,11 +59,10 @@ window.initiateGoogleLogin = () => {
 };
 
 window.initiateGithubLogin = () => {
-    // Note: This callback goes directly to backend API as per your strict setup
-    const backendCallback = "https://room-chat-api-eudf.onrender.com/accounts/github/login/callback/";
+    // FIXED: Redirect to Frontend, NOT Backend
     const params = new URLSearchParams({
         client_id: CONFIG.GITHUB_CLIENT_ID,
-        redirect_uri: backendCallback,
+        redirect_uri: CONFIG.FRONTEND_URL, // Points to login.html
         scope: 'user:email read:user'
     });
     window.location.href = `https://github.com/login/oauth/authorize?${params}`;
@@ -75,23 +74,31 @@ window.onload = async () => {
     const code = urlParams.get('code');
     const error = urlParams.get('error');
 
+    // Determine which provider sent us back
+    // (In a real app, you might store a 'provider' in sessionStorage before redirecting)
+    // For now, we try Google first, if that fails (400), we try GitHub.
+    
     if (code) {
-        UI.showStatus('status-message', "PROCESSING OAUTH...", "success");
-        // Remove code from URL immediately to prevent re-use issues
-        window.history.replaceState({}, document.title, window.location.pathname);
-
-        const res = await API.request('/api/auth/google/', 'POST', { code });
-        if (res.ok) {
-            const token = res.data.key || res.data.access_token;
-            if (token) {
-                localStorage.setItem('token', token);
-                // We might need to fetch user details if not provided, but token is enough for dashboard
-                window.location.href = 'dashboard.html';
-            }
-        } else {
-            UI.showStatus('status-message', "SOCIAL AUTH FAILED", "error");
+        UI.showStatus('status-message', "ANALYZING SECURITY TOKEN...", "success");
+        
+        // 1. Try Google
+        let res = await API.request('/api/auth/google/', 'POST', { code });
+        
+        // 2. If Google fails, Try GitHub
+        if (!res.ok) {
+            console.log("Not Google, trying GitHub...");
+            res = await API.request('/api/auth/github/', 'POST', { code });
         }
-    } else if (error) {
-        UI.showStatus('status-message', `AUTH ERROR: ${error}`, "error");
+
+        if (res.ok) {
+            UI.showStatus('status-message', "ACCESS GRANTED", "success");
+            localStorage.setItem('token', res.data.key);
+            // Clean URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            // Redirect
+            setTimeout(() => window.location.href = 'dashboard.html', 1000);
+        } else {
+            UI.showStatus('status-message', "AUTHENTICATION FAILED: " + JSON.stringify(res.data), "error");
+        }
     }
 };
