@@ -1,112 +1,164 @@
-/* style.css */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap');
-
 :root {
-    --color-main: #FD9745;
-    --color-bg: #F4F4F0;
-    --color-text: #0D0D0D;
-    --shadow-neo: 4px 4px 0px 0px #000000;
-    --shadow-neo-sm: 2px 2px 0px 0px #000000;
+    --bg-color: #e0e7ff; /* Light Periwinkle */
+    --main-color: #a5b4fc;
+    --accent-yellow: #fde047; /* Neo Yellow */
+    --accent-pink: #f472b6;   /* Neo Pink */
+    --accent-green: #86efac;  /* Neo Green */
+    --border-color: #000000;
+    --shadow: 5px 5px 0px 0px #000000;
+    --shadow-active: 2px 2px 0px 0px #000000;
 }
 
 * {
     box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+    font-family: 'Courier New', Courier, monospace; /* Monospace for engineering feel */
 }
 
 body {
-    font-family: 'Space Grotesk', sans-serif;
-    background-color: var(--color-bg);
-    color: var(--color-text);
+    background-color: var(--bg-color);
+    margin: 0;
     padding: 20px;
+    color: var(--border-color);
 }
 
-/* --- COMPONENTS --- */
-.container {
-    max-width: 1000px;
-    margin: 0 auto;
-}
-
-.card {
+/* --- Utilities --- */
+.neo-box {
     background: white;
-    border: 3px solid black;
-    box-shadow: var(--shadow-neo);
+    border: 3px solid var(--border-color);
+    box-shadow: var(--shadow);
     padding: 20px;
     margin-bottom: 20px;
+    transition: all 0.1s ease;
 }
 
-.btn {
-    background: var(--color-main);
+.neo-btn {
+    background: var(--accent-yellow);
+    border: 3px solid var(--border-color);
+    box-shadow: var(--shadow);
     color: black;
-    border: 2px solid black;
     padding: 10px 20px;
     font-weight: bold;
-    font-size: 1rem;
     cursor: pointer;
-    box-shadow: var(--shadow-neo-sm);
-    transition: all 0.1s;
-    text-decoration: none;
+    text-transform: uppercase;
+    font-size: 1rem;
     display: inline-block;
+    text-decoration: none;
 }
 
-.btn:active {
+.neo-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0px 0px black;
+}
+
+.neo-btn:active {
     transform: translate(2px, 2px);
-    box-shadow: none;
+    box-shadow: var(--shadow-active);
 }
 
-.btn-secondary {
-    background: white;
+.neo-btn.pink { background: var(--accent-pink); }
+.neo-btn.green { background: var(--accent-green); }
+
+.neo-input {
+    border: 3px solid var(--border-color);
+    padding: 10px;
+    width: 100%;
+    margin-bottom: 15px;
+    font-size: 1rem;
+    background: #fff;
+    box-shadow: 3px 3px 0px 0px black;
 }
 
-.btn-danger {
-    background: #ffcccc;
+.neo-input:focus {
+    outline: none;
+    background: #fffbeb;
 }
 
-/* --- LAYOUTS --- */
+/* --- Layouts --- */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 30px;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { display: none; } /* Simplified for mobile */
+}
+
+/* --- Components --- */
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
-    border-bottom: 3px solid black;
-    padding-bottom: 20px;
 }
 
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
+.room-item {
+    cursor: pointer;
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 3px solid transparent;
+}
+.room-item:hover {
+    background-color: var(--accent-yellow);
+    border: 3px solid black;
+}
+.room-item.active {
+    background-color: var(--accent-pink);
+    border: 3px solid black;
+    box-shadow: 3px 3px 0px black;
+    font-weight: bold;
 }
 
-input {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid black;
-    box-shadow: var(--shadow-neo-sm);
-    font-family: inherit;
-    margin-bottom: 15px;
-}
-
-/* --- ROOM CARD --- */
-.room-card {
+.chat-window {
+    height: 600px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
 }
 
-.room-meta {
-    display: flex;
-    justify-content: space-between;
+.messages-area {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 10px;
+    border-bottom: 3px solid black;
+    background: #fafafa;
+}
+
+.message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 2px solid black;
+    background: white;
+    box-shadow: 3px 3px 0px black;
+    max-width: 70%;
+}
+
+.message.mine {
+    margin-left: auto;
+    background: var(--accent-green);
+}
+
+.message-meta {
     font-size: 0.8rem;
     font-weight: bold;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
+    border-bottom: 1px solid black;
+    display: flex;
+    justify-content: space-between;
 }
 
-.host-tag {
-    background: var(--color-main);
-    padding: 2px 8px;
-    border: 1px solid black;
-    border-radius: 20px;
+.message-form {
+    display: flex;
+    padding-top: 20px;
+    gap: 10px;
+}
+
+.loading {
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+    padding: 20px;
 }

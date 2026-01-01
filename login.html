@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Room Chat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh;">
+        <div class="neo-box" style="width: 400px; text-align: center;">
+            <h1 style="background: black; color: white; padding: 10px;">ROOM CHAT</h1>
+            <h3>Login Required</h3>
+            
+            <p id="login-status">Select a provider to continue</p>
+
+            <button onclick="loginWithGoogle()" class="neo-btn pink" style="width: 100%; margin-bottom: 10px;">
+                Login with Google
+            </button>
+            <button onclick="loginWithGithub()" class="neo-btn" style="width: 100%;">
+                Login with GitHub
+            </button>
+            
+            <div style="margin-top: 20px; border-top: 2px dashed black; padding-top: 10px;">
+                <small>Or use standard credentials (API)</small>
+                <form id="std-login-form" style="margin-top: 10px;">
+                    <input type="text" id="username" class="neo-input" placeholder="Username">
+                    <input type="password" id="password" class="neo-input" placeholder="Password">
+                    <button type="submit" class="neo-btn green">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script>
+        // Check for OAuth Callback
+        if (window.location.search.includes("code=")) {
+            handleCallback();
+        }
+
+        // Standard Login Handler
+        document.getElementById('std-login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            
+            try {
+                const res = await fetch(`${API_BASE}/users/login/`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username: u, password: p})
+                });
+                const data = await res.json();
+                if(data.token) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user_id', data.user_id);
+                    localStorage.setItem('username', u);
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Login failed: ' + (data.detail || 'Unknown error'));
+                }
+            } catch (err) { alert('Error connecting to server'); }
+        });
+    </script>
+</body>
+</html>
