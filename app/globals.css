@@ -1,26 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap');
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* 1. Define your Neobrutalism Colors */
+  --color-main: #FD9745;
+  --color-bg: #F4F4F0;
+  --color-text: #0D0D0D;
+
+  /* 2. Define your Hard Shadows */
+  --shadow-neo: 4px 4px 0px 0px #000000;
+  --shadow-neo-sm: 2px 2px 0px 0px #000000;
+
+  /* 3. Define Fonts */
+  --font-heading: 'Space Grotesk', sans-serif;
+  --font-base: 'Space Grotesk', sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* 4. Apply Global Styles */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Space Grotesk', sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
 }
