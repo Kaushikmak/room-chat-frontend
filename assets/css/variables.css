@@ -1,5 +1,4 @@
 :root {
-    /* Colors */
     --bg-color: #f0f0f0;
     --box-bg: #ffffff;
     --box-text: #000000;
@@ -14,7 +13,6 @@
     --font-stack: 'Courier New', Courier, monospace;
 }
 
-/* Dark Mode Overrides */
 [data-theme="dark"] {
     --bg-color: #121212;
     --box-bg: #1e1e1e;
@@ -33,4 +31,5 @@ body {
     background-size: 20px 20px;
     color: var(--text-color);
     transition: background-color 0.3s ease;
+    margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden;
 }
