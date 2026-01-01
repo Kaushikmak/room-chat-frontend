@@ -1,164 +1,187 @@
+/* NEOBRUTALISM THEME VARIABLES */
 :root {
-    --bg-color: #e0e7ff; /* Light Periwinkle */
-    --main-color: #a5b4fc;
-    --accent-yellow: #fde047; /* Neo Yellow */
-    --accent-pink: #f472b6;   /* Neo Pink */
-    --accent-green: #86efac;  /* Neo Green */
-    --border-color: #000000;
-    --shadow: 5px 5px 0px 0px #000000;
-    --shadow-active: 2px 2px 0px 0px #000000;
+    --bg-color: #f0f0f0;
+    --main-accent: #FFEB3B; /* Yellow */
+    --secondary-accent: #FF4081; /* Pink */
+    --text-color: #000000;
+    --border-width: 3px;
+    --shadow-offset: 5px;
+    --font-stack: 'Courier New', Courier, monospace;
 }
 
 * {
     box-sizing: border-box;
-    font-family: 'Courier New', Courier, monospace; /* Monospace for engineering feel */
+    margin: 0;
+    padding: 0;
 }
 
 body {
+    font-family: var(--font-stack);
     background-color: var(--bg-color);
-    margin: 0;
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
     padding: 20px;
-    color: var(--border-color);
 }
 
-/* --- Utilities --- */
+/* GENERAL BOX STYLING */
 .neo-box {
     background: white;
-    border: 3px solid var(--border-color);
-    box-shadow: var(--shadow);
-    padding: 20px;
+    border: var(--border-width) solid black;
+    box-shadow: var(--shadow-offset) var(--shadow-offset) 0px 0px black;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+/* HEADER */
+.header-section {
+    text-align: center;
+    background-color: var(--main-accent);
+}
+
+.header-section h1 {
+    font-size: 2.5rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -2px;
+}
+
+/* AUTH CONTAINER */
+.auth-container {
+    width: 100%;
+    max-width: 450px;
+}
+
+/* TABS */
+.auth-tabs {
+    display: flex;
+    gap: 10px;
     margin-bottom: 20px;
-    transition: all 0.1s ease;
 }
 
 .neo-btn {
-    background: var(--accent-yellow);
-    border: 3px solid var(--border-color);
-    box-shadow: var(--shadow);
-    color: black;
+    border: var(--border-width) solid black;
     padding: 10px 20px;
+    font-family: inherit;
     font-weight: bold;
     cursor: pointer;
     text-transform: uppercase;
-    font-size: 1rem;
-    display: inline-block;
-    text-decoration: none;
-}
-
-.neo-btn:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 7px 7px 0px 0px black;
+    transition: all 0.1s;
+    background: white;
+    box-shadow: 3px 3px 0px 0px black;
 }
 
 .neo-btn:active {
     transform: translate(2px, 2px);
-    box-shadow: var(--shadow-active);
+    box-shadow: 1px 1px 0px 0px black;
 }
 
-.neo-btn.pink { background: var(--accent-pink); }
-.neo-btn.green { background: var(--accent-green); }
-
-.neo-input {
-    border: 3px solid var(--border-color);
-    padding: 10px;
-    width: 100%;
-    margin-bottom: 15px;
-    font-size: 1rem;
-    background: #fff;
-    box-shadow: 3px 3px 0px 0px black;
+.neo-btn.tab {
+    flex: 1;
 }
 
-.neo-input:focus {
-    outline: none;
-    background: #fffbeb;
+.neo-btn.tab.active {
+    background-color: var(--secondary-accent);
+    color: white;
 }
 
-/* --- Layouts --- */
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 30px;
+/* FORMS */
+.auth-form {
+    display: none;
+    flex-direction: column;
+    gap: 15px;
 }
 
-/* Mobile responsive */
-@media (max-width: 768px) {
-    .container { grid-template-columns: 1fr; }
-    .sidebar { display: none; } /* Simplified for mobile */
-}
-
-/* --- Components --- */
-.header {
+.auth-form.active {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
 }
 
-.room-item {
-    cursor: pointer;
-    margin-bottom: 10px;
-    padding: 10px;
-    border: 3px solid transparent;
-}
-.room-item:hover {
-    background-color: var(--accent-yellow);
-    border: 3px solid black;
-}
-.room-item.active {
-    background-color: var(--accent-pink);
-    border: 3px solid black;
-    box-shadow: 3px 3px 0px black;
-    font-weight: bold;
-}
-
-.chat-window {
-    height: 600px;
+.input-group {
     display: flex;
     flex-direction: column;
+    gap: 5px;
 }
 
-.messages-area {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 10px;
-    border-bottom: 3px solid black;
-    background: #fafafa;
-}
-
-.message {
-    margin-bottom: 15px;
-    padding: 10px;
-    border: 2px solid black;
-    background: white;
-    box-shadow: 3px 3px 0px black;
-    max-width: 70%;
-}
-
-.message.mine {
-    margin-left: auto;
-    background: var(--accent-green);
-}
-
-.message-meta {
-    font-size: 0.8rem;
+.input-group label {
     font-weight: bold;
-    margin-bottom: 5px;
-    border-bottom: 1px solid black;
-    display: flex;
-    justify-content: space-between;
+    font-size: 0.9rem;
 }
 
-.message-form {
+.input-group input {
+    border: var(--border-width) solid black;
+    padding: 10px;
+    font-family: inherit;
+    font-size: 1rem;
+    background: #fff;
+    outline: none;
+    box-shadow: 3px 3px 0px 0px rgba(0,0,0,0.1);
+}
+
+.input-group input:focus {
+    background-color: #e0f7fa;
+}
+
+.action-btn {
+    background-color: var(--main-accent);
+    font-size: 1.1rem;
+    margin-top: 10px;
+    width: 100%;
+}
+
+/* DIVIDER */
+.divider {
+    text-align: center;
+    margin: 20px 0;
+    position: relative;
+    border-bottom: 2px solid black;
+    line-height: 0.1em;
+}
+
+.divider span {
+    background: #fff;
+    padding: 0 10px;
+    font-weight: bold;
+}
+
+/* SOCIAL BUTTONS */
+.social-buttons {
     display: flex;
-    padding-top: 20px;
     gap: 10px;
 }
 
-.loading {
-    text-align: center;
+.social-btn {
+    flex: 1;
+}
+
+.social-btn.google {
+    background-color: #ffffff;
+}
+
+.social-btn.github {
+    background-color: #cecece;
+}
+
+/* STATUS MESSAGE */
+.status-box {
+    margin-top: 20px;
+    padding: 10px;
+    border: var(--border-width) solid black;
     font-weight: bold;
-    font-size: 1.2rem;
-    padding: 20px;
+    text-align: center;
+}
+
+.status-box.hidden {
+    display: none;
+}
+
+.status-box.error {
+    background-color: #ffcdd2;
+    color: #b71c1c;
+}
+
+.status-box.success {
+    background-color: #c8e6c9;
+    color: #1b5e20;
 }
