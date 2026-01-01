@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room Chat | Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="neo-box navbar">
+        <div class="brand">ROOM CHAT</div>
+        <div class="nav-controls">
+            <span id="nav-username" class="user-tag">LOADING...</span>
+            <button onclick="handleLogout()" class="neo-btn logout-btn">LOGOUT</button>
+        </div>
+    </nav>
+
+    <div class="main-container dashboard-layout">
+        
+        <section class="neo-box profile-section">
+            <div class="section-header">
+                <h2>YOUR IDENTITY</h2>
+                <div class="indicator">ONLINE</div>
+            </div>
+
+            <div id="profile-view" class="profile-content">
+                <div class="info-row">
+                    <span class="label">CODENAME:</span>
+                    <span id="display-username" class="value">...</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">CONTACT:</span>
+                    <span id="display-email" class="value">...</span>
+                </div>
+                <button onclick="toggleEditMode(true)" class="neo-btn action-btn edit-btn">
+                    REWRITE IDENTITY
+                </button>
+            </div>
+
+            <form id="profile-edit" class="profile-content hidden" onsubmit="handleProfileUpdate(event)">
+                <div class="input-group">
+                    <label>NEW CODENAME</label>
+                    <input type="text" id="edit-username" required>
+                </div>
+                <div class="input-group">
+                    <label>NEW CONTACT</label>
+                    <input type="email" id="edit-email" required>
+                </div>
+                <div class="button-group">
+                    <button type="button" onclick="toggleEditMode(false)" class="neo-btn cancel-btn">CANCEL</button>
+                    <button type="submit" class="neo-btn save-btn">SAVE CHANGES</button>
+                </div>
+            </form>
+
+            <div id="dashboard-status" class="status-box hidden"></div>
+        </section>
+
+        <section class="neo-box rooms-section">
+            <div class="section-header">
+                <h2>THE LOBBY</h2>
+            </div>
+            <p>Select a frequency to begin transmission.</p>
+            <br>
+            <button class="neo-btn action-btn" onclick="alert('Room list feature coming soon!')">
+                BROWSE ROOMS
+            </button>
+        </section>
+    </div>
+
+    <script src="rooms.js"></script>
+</body>
+</html>

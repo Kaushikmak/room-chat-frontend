@@ -185,3 +185,212 @@ body {
     background-color: #c8e6c9;
     color: #1b5e20;
 }
+
+/* --- EXISTING VARIABLES & BASE STYLES (Keep these) --- */
+:root {
+    --bg-color: #f0f0f0;
+    --main-accent: #FFEB3B; /* Yellow */
+    --secondary-accent: #FF4081; /* Pink */
+    --success-color: #00E676; /* Green */
+    --text-color: #000000;
+    --border-width: 3px;
+    --shadow-offset: 5px;
+    --font-stack: 'Courier New', Courier, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: var(--font-stack);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    padding: 20px;
+}
+
+/* GENERAL BOX STYLING */
+.neo-box {
+    background: white;
+    border: var(--border-width) solid black;
+    box-shadow: var(--shadow-offset) var(--shadow-offset) 0px 0px black;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* BUTTONS */
+.neo-btn {
+    border: var(--border-width) solid black;
+    padding: 10px 20px;
+    font-family: inherit;
+    font-weight: 900;
+    cursor: pointer;
+    text-transform: uppercase;
+    background: white;
+    box-shadow: 3px 3px 0px 0px black;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.neo-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px 0px black;
+}
+
+/* --- NEW DASHBOARD STYLES --- */
+
+/* Navbar */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--main-accent);
+    padding: 1rem 2rem;
+}
+
+.navbar .brand {
+    font-size: 1.5rem;
+    font-weight: 900;
+    letter-spacing: -1px;
+}
+
+.nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-tag {
+    font-weight: bold;
+    background: black;
+    color: white;
+    padding: 5px 10px;
+}
+
+.logout-btn {
+    background-color: #ffcdd2; /* Light Red */
+    font-size: 0.8rem;
+}
+
+/* Layout */
+.dashboard-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+    .dashboard-layout {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Profile Section */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 3px solid black;
+    padding-bottom: 10px;
+}
+
+.section-header h2 {
+    font-size: 1.2rem;
+    font-weight: 900;
+}
+
+.indicator {
+    width: 15px;
+    height: 15px;
+    background-color: var(--success-color);
+    border: 2px solid black;
+    border-radius: 50%;
+}
+
+.profile-content {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.profile-content.hidden {
+    display: none;
+}
+
+.info-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.info-row .label {
+    font-size: 0.8rem;
+    color: #666;
+    font-weight: bold;
+}
+
+.info-row .value {
+    font-size: 1.2rem;
+    font-weight: 900;
+    background: #e0e0e0;
+    padding: 5px;
+    border: 2px solid black;
+}
+
+/* Forms & Inputs */
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.input-group label {
+    font-weight: bold;
+    font-size: 0.8rem;
+}
+
+.input-group input {
+    border: var(--border-width) solid black;
+    padding: 10px;
+    font-family: inherit;
+    font-size: 1rem;
+    outline: none;
+    box-shadow: 3px 3px 0px 0px rgba(0,0,0,0.1);
+}
+
+.input-group input:focus {
+    background-color: #e0f7fa;
+}
+
+/* Action Buttons */
+.button-group {
+    display: flex;
+    gap: 10px;
+}
+
+.save-btn {
+    background-color: var(--success-color);
+    flex: 1;
+}
+
+.cancel-btn {
+    background-color: #e0e0e0;
+}
+
+.edit-btn {
+    background-color: var(--main-accent);
+}
+
+/* Status Box */
+.status-box {
+    margin-top: 15px;
+    padding: 10px;
+    border: 2px solid black;
+    font-weight: bold;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.status-box.success { background-color: #c8e6c9; color: black; }
+.status-box.error { background-color: #ffcdd2; color: black; }
+.status-box.hidden { display: none; }
