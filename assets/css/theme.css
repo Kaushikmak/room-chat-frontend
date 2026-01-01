@@ -1,0 +1,34 @@
+/* Base Reset */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-stack); background-color: var(--bg-color); padding: 20px; }
+
+/* Components */
+.neo-box {
+    background: white;
+    border: var(--border-width) solid black;
+    box-shadow: var(--shadow-offset) var(--shadow-offset) 0px 0px black;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.neo-btn {
+    border: var(--border-width) solid black;
+    padding: 10px 20px;
+    font-weight: 900;
+    cursor: pointer;
+    text-transform: uppercase;
+    background: white;
+    box-shadow: 3px 3px 0px 0px black;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.neo-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px 0px black;
+}
+
+/* Status Messages */
+.status-box { text-align: center; font-weight: bold; }
+.status-box.success { background-color: #c8e6c9; }
+.status-box.error { background-color: var(--error-color); }
+.hidden { display: none !important; }

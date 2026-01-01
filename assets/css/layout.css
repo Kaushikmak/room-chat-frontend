@@ -1,0 +1,123 @@
+/* CONTAINER LAYOUTS */
+.main-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* AUTH SPECIFIC */
+.auth-container {
+    width: 100%;
+    max-width: 450px;
+}
+
+.auth-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.neo-btn.tab { flex: 1; }
+.neo-btn.tab.active {
+    background-color: var(--secondary-accent);
+    color: white;
+}
+
+/* FORMS */
+.auth-form {
+    display: none;
+    flex-direction: column;
+    gap: 15px;
+}
+.auth-form.active { display: flex; }
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.input-group label {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.input-group input {
+    border: var(--border-width) solid black;
+    padding: 10px;
+    font-family: inherit;
+    font-size: 1rem;
+    background: #fff;
+    outline: none;
+    box-shadow: 3px 3px 0px 0px rgba(0,0,0,0.1);
+}
+
+.input-group input:focus { background-color: #e0f7fa; }
+
+.action-btn {
+    background-color: var(--main-accent);
+    margin-top: 10px;
+}
+
+/* SOCIAL & DIVIDER */
+.divider {
+    text-align: center;
+    margin: 20px 0;
+    border-bottom: 2px solid black;
+    line-height: 0.1em;
+}
+.divider span { background: #fff; padding: 0 10px; font-weight: bold; }
+
+.social-buttons { display: flex; gap: 10px; }
+.social-btn { flex: 1; }
+.social-btn.google { background-color: #fff; }
+.social-btn.github { background-color: #cecece; }
+
+/* DASHBOARD SPECIFIC */
+.dashboard-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    width: 100%;
+    max-width: 800px;
+    margin-top: 20px;
+}
+
+@media (min-width: 768px) {
+    .dashboard-layout { grid-template-columns: 1fr 1fr; }
+}
+
+.navbar {
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--main-accent);
+}
+
+.nav-controls { display: flex; align-items: center; gap: 15px; }
+
+.user-tag {
+    font-weight: bold;
+    background: black;
+    color: white;
+    padding: 5px 10px;
+}
+
+.profile-content { display: flex; flex-direction: column; gap: 15px; }
+.info-row { display: flex; flex-direction: column; gap: 5px; }
+.info-row .value {
+    font-size: 1.2rem;
+    font-weight: 900;
+    background: #e0e0e0;
+    padding: 5px;
+    border: 2px solid black;
+}
+
+.button-group { display: flex; gap: 10px; }

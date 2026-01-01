@@ -1,0 +1,11 @@
+:root {
+    --bg-color: #f0f0f0;
+    --main-accent: #FFEB3B;
+    --secondary-accent: #FF4081;
+    --success-color: #00E676;
+    --error-color: #ffcdd2;
+    --text-color: #000000;
+    --border-width: 3px;
+    --shadow-offset: 5px;
+    --font-stack: 'Courier New', Courier, monospace;
+}
