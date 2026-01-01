@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import ChunkErrorListener from '@/components/ChunkErrorListener'; // Import it
 
 export const metadata: Metadata = {
   title: "Room Chat",
@@ -12,13 +13,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // REPLACE THIS WITH YOUR ACTUAL GOOGLE CLIENT ID
-  const GOOGLE_CLIENT_ID = "330254000032-a44jgat9dsffraenoa0fuucqa5tv6lo7.apps.googleusercontent.com";
+  const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
   return (
     <html lang="en">
       <body>
         <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+          <ChunkErrorListener /> {/* <--- ADD THIS LINE */}
           {children}
         </GoogleOAuthProvider>
       </body>
