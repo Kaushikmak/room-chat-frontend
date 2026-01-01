@@ -1,82 +1,56 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import Button from '@/components/ui/Button';
 import Link from 'next/link';
+import LoadingWave from '@/components/ui/LoadingWave';
 
 export default function Home() {
-  const router = useRouter();
-  const [username, setUsername] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isLoading, logout } = useAuth();
 
-  // Check authentication status on mount
-  useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    const user = localStorage.getItem('username');
-    
-    if (token && user) {
-      setUsername(user);
-    }
-    
-    // authentication check complete
-    setIsLoading(false);
-  }, []);
-
-  const handleLogout = () => {
-    // 1. Clear Local Storage
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('username');
-    
-    // 2. Reset State
-    setUsername(null);
-    
-    // 3. Redirect to Login
-    router.push('/login');
-  };
-
-  // Prevent flicker while checking auth state
+  // 1. LOADING STATE (Prevents Flash)
   if (isLoading) {
-    return <div className="min-h-screen bg-bg"></div>; 
+    return <LoadingWave />;
   }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-bg p-4">
       
-      <div className="max-w-2xl w-full bg-white border-4 border-black shadow-neo p-8 text-center">
+      <div className="max-w-2xl w-full bg-white border-4 border-black shadow-neo p-8 text-center animate-in fade-in zoom-in duration-300">
         
-        {username ? (
-          // --- AUTHENTICATED HOME PAGE ---
+        {user ? (
+          // --- AUTHENTICATED DASHBOARD ---
           <div className="flex flex-col gap-6">
-            <h1 className="text-4xl font-heading">DASHBOARD</h1>
-            <div className="h-px bg-black w-full"></div>
+            <h1 className="text-5xl font-heading tracking-tight">DASHBOARD</h1>
+            <div className="h-1 bg-black w-full"></div>
             
-            <p className="text-xl">
-              User: <span className="font-bold text-main">{username}</span>
-            </p>
+            <div className="bg-gray-100 p-4 border-2 border-black">
+              <p className="text-xl font-base">
+                OPERATOR: <span className="font-bold text-main uppercase">{user.username}</span>
+              </p>
+            </div>
             
-            <div className="flex flex-col gap-4">
-               <Button variant="primary">ENTER ROOMS</Button>
-               <Button variant="outline" onClick={handleLogout}>LOGOUT</Button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+               <Button variant="primary" className="h-14 text-lg">ENTER ROOMS</Button>
+               <Button variant="outline" className="h-14 text-lg" onClick={() => logout()}>LOGOUT</Button>
             </div>
           </div>
         ) : (
           // --- GUEST LANDING PAGE ---
           <div className="flex flex-col gap-6">
-            <h1 className="text-4xl font-heading">ROOM CHAT</h1>
-            <div className="h-px bg-black w-full"></div>
+            <h1 className="text-5xl font-heading tracking-tight">ROOM CHAT</h1>
+            <div className="h-1 bg-black w-full"></div>
             
-            <p className="text-lg text-gray-600">
-              Authentication required. Please login or register to access the application.
+            <p className="text-xl text-gray-800 font-base">
+              SECURE TERMINAL ACCESS REQUIRED.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mt-4">
               <Link href="/login" className="w-full sm:w-auto">
-                <Button variant="primary" className="w-full">LOGIN</Button>
+                <Button variant="primary" className="w-full h-14 text-lg">LOGIN TERMINAL</Button>
               </Link>
               <Link href="/register" className="w-full sm:w-auto">
-                <Button variant="secondary" className="w-full">REGISTER</Button>
+                <Button variant="secondary" className="w-full h-14 text-lg">NEW USER REGISTRY</Button>
               </Link>
             </div>
           </div>
