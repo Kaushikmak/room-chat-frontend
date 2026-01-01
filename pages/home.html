@@ -3,94 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Room Chat | Hub</title>
+    <title>Room Chat | Terminal</title>
     <link rel="stylesheet" href="../assets/css/variables.css">
     <link rel="stylesheet" href="../assets/css/theme.css">
     <link rel="stylesheet" href="../assets/css/layout.css">
     <style>
-        .full-screen-container {
-            display: grid;
-            grid-template-rows: auto 1fr;
-            height: 100vh;
-            width: 100vw;
-            padding: 20px;
-            overflow: hidden;
-        }
-        .home-grid {
+        body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden; }
+        
+        .main-app-grid {
             display: grid;
             grid-template-columns: 300px 1fr 320px;
-            gap: 20px;
-            height: 100%;
-            overflow: hidden;
+            height: calc(100vh - 70px); /* Subtract Navbar height */
+            margin-top: 70px;
+            gap: 15px;
+            padding: 15px;
         }
-        .scroll-area { overflow-y: auto; height: 100%; }
-        .mention-tag { color: var(--secondary-accent); font-weight: 900; }
+
+        .scroll-column { overflow-y: auto; height: 100%; display: flex; flex-direction: column; }
         
-        /* DM Popup Styles */
-        #dm-popup {
-            position: fixed; bottom: 20px; right: 20px;
-            width: 300px; height: 400px; z-index: 1000;
-            display: flex; flex-direction: column;
+        .mention-tag { color: var(--secondary-accent); font-weight: 900; }
+
+        /* Toggle Switch Styling */
+        .theme-switch {
+            width: 50px; height: 25px; background: black;
+            border: 2px solid white; cursor: pointer; position: relative;
         }
+        .theme-switch::after {
+            content: ''; position: absolute; width: 20px; height: 21px;
+            background: var(--main-accent); top: 0; left: 2px; transition: 0.2s;
+        }
+        [data-theme="dark"] .theme-switch::after { left: 24px; background: var(--secondary-accent); }
     </style>
 </head>
 <body>
-    <div class="full-screen-container">
-        <nav class="neo-box navbar">
-            <div class="brand" onclick="window.location.href='home.html'" style="cursor:pointer">ROOM CHAT</div>
-            <div class="nav-controls">
-                <div id="user-avatar" class="avatar-circle" onclick="window.location.href='dashboard.html'">?</div>
+    <nav class="navbar">
+        <div class="funky-logo">ROOM CHAT</div>
+        
+        <div class="nav-controls">
+            <div class="theme-switch" onclick="window.toggleTheme()" title="Toggle Dark/Light"></div>
+            <div id="user-avatar" class="avatar-circle" onclick="window.location.href='dashboard.html'">?</div>
+        </div>
+    </nav>
+
+    <div class="main-app-grid">
+        <aside class="neo-box scroll-column">
+            <h3>TERMINALS</h3>
+            <div class="auth-tabs" style="margin-bottom:15px">
+                <button class="neo-btn tab active" onclick="showTab('rooms')">PUBLIC</button>
+                <button class="neo-btn tab" onclick="showTab('dms')">DIRECT</button>
             </div>
-        </nav>
-
-        <div class="home-grid">
-            <aside class="neo-box scroll-area">
-                <h3>NAVIGATE</h3>
-                <div class="auth-tabs">
-                    <button class="neo-btn tab active" onclick="showTab('rooms')">ROOMS</button>
-                    <button class="neo-btn tab" onclick="showTab('dms')">DMS</button>
-                </div>
-                <div id="rooms-nav-content">
-                    <div id="topics-list"></div>
-                    <hr style="border:1px solid black; margin:15px 0">
-                    <div id="rooms-list"></div>
-                </div>
-                <div id="dms-nav-content" class="hidden">
-                    <div id="dm-rooms-list"></div>
-                </div>
-            </aside>
-
-            <main class="neo-box scroll-area" style="display:flex; flex-direction:column">
-                <div id="room-header" style="border-bottom:3px solid black; padding-bottom:10px">
-                    <h2 id="active-room-name">TERMINAL IDLE</h2>
-                </div>
-                <div id="messages-container" style="flex:1; margin-top:15px" class="scroll-area"></div>
-                <form id="chat-form" class="hidden" onsubmit="window.sendMessage(event)" style="display:flex; gap:10px; padding-top:15px">
-                    <input type="text" id="msg-body" placeholder="Transmission..." style="flex:1; border:3px solid black; padding:10px">
-                    <button type="submit" class="neo-btn" style="background:var(--success-color)">SEND</button>
-                </form>
-            </main>
-
-            <aside class="neo-box scroll-area">
-                <h3>FRIENDS</h3>
-                <div id="friends-list"></div>
+            <div id="rooms-nav-content">
+                <div id="topics-list" class="scroll-area"></div>
                 <hr style="border:1px solid black; margin:15px 0">
-                <h3>GLOBAL SIGNAL</h3>
-                <div id="activity-feed"></div>
-            </aside>
-        </div>
-    </div>
+                <div id="rooms-list" class="scroll-area"></div>
+            </div>
+            <div id="dms-nav-content" class="hidden">
+                <div id="dm-rooms-list"></div>
+            </div>
+        </aside>
 
-    <div id="dm-popup" class="neo-box hidden">
-        <div style="display:flex; justify-content:space-between; border-bottom:2px solid black">
-            <span id="dm-target-name">@USER</span>
-            <button onclick="closeDMPopup()" style="background:none; border:none; cursor:pointer; font-weight:900">X</button>
-        </div>
-        <div id="dm-popup-messages" class="scroll-area" style="flex:1; font-size:0.8rem; margin:10px 0"></div>
-        <form onsubmit="sendPopupDM(event)" style="display:flex; gap:5px">
-            <input type="text" id="popup-dm-input" style="flex:1; border:2px solid black; padding:5px">
-            <button type="submit" class="neo-btn" style="padding:5px">-></button>
-        </form>
+        <main class="neo-box scroll-column">
+            <div id="room-header" style="border-bottom:3px solid black; padding-bottom:10px">
+                <h2 id="active-room-name">READY...</h2>
+            </div>
+            <div id="messages-container" style="flex:1" class="scroll-area"></div>
+            <form id="chat-form" class="hidden" onsubmit="window.sendMessage(event)" style="display:flex; gap:10px; padding-top:15px">
+                <input type="text" id="msg-body" placeholder="Transmission..." style="flex:1; border:3px solid black; padding:10px; background:white">
+                <button type="submit" class="neo-btn" style="background:var(--success-color)">SEND</button>
+            </form>
+        </main>
+
+        <aside class="neo-box scroll-column">
+            <h3>FREQUENCY FRIENDS</h3>
+            <div id="friends-list" class="scroll-area"></div>
+            <hr style="border:1px solid black; margin:15px 0">
+            <h3>ACTIVITY FEED</h3>
+            <div id="activity-feed" class="scroll-area"></div>
+        </aside>
     </div>
 
     <script type="module" src="../scripts/home.js"></script>

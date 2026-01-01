@@ -1,8 +1,7 @@
 :root {
+    /* Colors */
     --bg-color: #f0f0f0;
     --dot-color: #cbcbcb;
-    --dot-size: 1px;
-    --dot-space: 20px;
     --main-accent: #FFEB3B;
     --secondary-accent: #FF4081;
     --success-color: #00E676;
@@ -13,7 +12,21 @@
     --font-stack: 'Courier New', Courier, monospace;
 }
 
+/* Dark Mode Overrides */
+[data-theme="dark"] {
+    --bg-color: #121212;
+    --dot-color: #333333;
+    --main-accent: #6200EE;
+    --secondary-accent: #03DAC6;
+    --text-color: #ffffff;
+    --success-color: #018786;
+    --error-color: #cf6679;
+}
+
 body {
-    background-image: radial-gradient(var(--dot-color) var(--dot-size), transparent var(--dot-size));
-    background-size: var(--dot-space) var(--dot-space);
+    background-color: var(--bg-color);
+    background-image: radial-gradient(var(--dot-color) 1px, transparent 1px);
+    background-size: 20px 20px;
+    color: var(--text-color);
+    transition: background-color 0.3s ease;
 }

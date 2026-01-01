@@ -153,3 +153,32 @@
     width: 100%;
     padding: 0 20px;
 }
+
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 70px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--main-accent);
+    padding: 0 30px;
+    border-bottom: 4px solid black;
+    z-index: 2000;
+    box-shadow: 0 4px 0px rgba(0,0,0,0.2);
+}
+
+.funky-logo {
+    font-size: 1.8rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -2px;
+    background: black;
+    color: var(--main-accent);
+    padding: 5px 15px;
+    transform: skew(-10deg);
+    border: 3px solid white;
+    box-shadow: 4px 4px 0px var(--secondary-accent);
+}
