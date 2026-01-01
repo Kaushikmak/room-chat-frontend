@@ -47,10 +47,13 @@ window.handleRegister = async (e) => {
     }
 };
 
+// room-chat-frontend/scripts/login.js
+
 window.initiateGoogleLogin = () => {
+    sessionStorage.setItem('auth_provider', 'google'); // Track the provider
     const params = new URLSearchParams({
         client_id: CONFIG.GOOGLE_CLIENT_ID,
-        redirect_uri: CONFIG.FRONTEND_URL, // Points to login.html
+        redirect_uri: CONFIG.FRONTEND_URL,
         response_type: 'code',
         scope: 'email profile',
         prompt: 'select_account'
@@ -59,46 +62,34 @@ window.initiateGoogleLogin = () => {
 };
 
 window.initiateGithubLogin = () => {
-    // FIXED: Redirect to Frontend, NOT Backend
+    sessionStorage.setItem('auth_provider', 'github'); // Track the provider
     const params = new URLSearchParams({
         client_id: CONFIG.GITHUB_CLIENT_ID,
-        redirect_uri: CONFIG.FRONTEND_URL, // Points to login.html
+        redirect_uri: CONFIG.FRONTEND_URL,
         scope: 'user:email read:user'
     });
     window.location.href = `https://github.com/login/oauth/authorize?${params}`;
 };
 
-// OAuth Code Handler
 window.onload = async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
-    const error = urlParams.get('error');
+    const provider = sessionStorage.getItem('auth_provider');
 
-    // Determine which provider sent us back
-    // (In a real app, you might store a 'provider' in sessionStorage before redirecting)
-    // For now, we try Google first, if that fails (400), we try GitHub.
-    
-    if (code) {
-        UI.showStatus('status-message', "ANALYZING SECURITY TOKEN...", "success");
+    if (code && provider) {
+        UI.showStatus('status-message', `AUTHENTICATING VIA ${provider.toUpperCase()}...`, "success");
         
-        // 1. Try Google
-        let res = await API.request('/api/auth/google/', 'POST', { code });
-        
-        // 2. If Google fails, Try GitHub
-        if (!res.ok) {
-            console.log("Not Google, trying GitHub...");
-            res = await API.request('/api/auth/github/', 'POST', { code });
-        }
+        const endpoint = provider === 'google' ? '/api/auth/google/' : '/api/auth/github/';
+        const res = await API.request(endpoint, 'POST', { code });
 
         if (res.ok) {
             UI.showStatus('status-message', "ACCESS GRANTED", "success");
             localStorage.setItem('token', res.data.key);
-            // Clean URL
+            sessionStorage.removeItem('auth_provider');
             window.history.replaceState({}, document.title, window.location.pathname);
-            // Redirect
             setTimeout(() => window.location.href = 'dashboard.html', 1000);
         } else {
-            UI.showStatus('status-message', "AUTHENTICATION FAILED: " + JSON.stringify(res.data), "error");
+            UI.showStatus('status-message', "AUTH FAILED: " + JSON.stringify(res.data), "error");
         }
     }
 };
