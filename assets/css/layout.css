@@ -84,6 +84,21 @@
 }
 
 /* AUTH FORMS */
+
+.auth-form {
+    display: none;
+}
+
+.auth-form.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out; /* Optional: Adds a smooth transition */
+}
+
+/* Optional: Simple fade-in animation keyframes */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 .auth-container {
     width: 100%;
     max-width: 400px;
