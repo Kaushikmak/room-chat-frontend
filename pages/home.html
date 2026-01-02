@@ -153,6 +153,48 @@
     padding: 2px 5px;
     border-radius: 4px;
 }
+
+/* ACTIVITY FEED STYLES */
+.activity-item {
+    padding: 12px;
+    border-bottom: 2px solid black;
+    background: white;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    transition: background 0.2s;
+}
+.activity-item:hover {
+    background: rgba(0,0,0,0.02);
+}
+
+.act-user {
+    color: var(--main-accent); /* Violet/Accent Color */
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.act-context {
+    font-weight: 700;
+    color: black;
+}
+
+.act-time {
+    color: #888; /* Light Grey */
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 5px;
+}
+
+.act-body {
+    margin-top: 5px;
+    font-style: italic;
+    opacity: 0.8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-left: 3px solid var(--secondary-accent);
+    padding-left: 8px;
+}
     </style>
 </head>
 <body>

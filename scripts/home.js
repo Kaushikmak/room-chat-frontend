@@ -66,7 +66,35 @@ async function fetchFriends() {
 
 async function fetchActivity() {
     const res = await API.request('/api/activity/');
-    if (res.ok) document.getElementById('activity-feed').innerHTML = res.data.map(a => `<div class="list-item">${a.body}</div>`).join('');
+    if (res.ok) {
+        const container = document.getElementById('activity-feed');
+        
+        if (res.data.length === 0) {
+            container.innerHTML = '<div style="padding:15px; opacity:0.6;">Silence on the airwaves...</div>';
+            return;
+        }
+
+        container.innerHTML = res.data.map(a => {
+            // Format Time (e.g., 12:30 pm)
+            const date = new Date(a.created);
+            const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase();
+            
+            // Format Context: "Topic/Room" or just "Room"
+            const context = a.topic ? `${a.topic}/${a.room}` : a.room;
+
+            return `
+            <div class="activity-item">
+                <div>
+                    <span class="act-user">@${a.user.username}</span>
+                    <span>messaged on</span>
+                    <span class="act-context">"${context}"</span>
+                    <span class="act-time">${time}</span>
+                </div>
+                <div class="act-body">"${a.body}"</div>
+            </div>
+            `;
+        }).join('');
+    }
 }
 
 // --- FRIEND MANAGEMENT LOGIC ---
