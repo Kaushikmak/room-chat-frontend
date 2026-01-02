@@ -3,66 +3,197 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Room Chat | Dashboard</title>
+    <title>Control Center | Room Chat</title>
     <link rel="stylesheet" href="../assets/css/variables.css">
     <link rel="stylesheet" href="../assets/css/theme.css">
     <link rel="stylesheet" href="../assets/css/layout.css">
+    <style>
+        /* DASHBOARD SPECIFIC STYLES */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Identity Card */
+        .identity-card {
+            background: black;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .glitch-text {
+            font-size: 3rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            position: relative;
+            text-shadow: 2px 2px var(--main-accent), -2px -2px var(--secondary-accent);
+            animation: glitch 3s infinite alternate;
+        }
+
+        /* Stats Row */
+        .stats-row {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .stat-badge {
+            background: white;
+            color: black;
+            padding: 5px 10px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            border: 2px solid white;
+        }
+
+        /* Friend Cards */
+        .friend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .friend-card {
+            border: 2px solid black;
+            background: white;
+            padding: 10px;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+        .friend-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 4px 4px 0 black;
+            background: var(--secondary-accent);
+        }
+        .status-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            border: 1px solid black;
+        }
+        .status-online { background: var(--success-color); }
+        .status-offline { background: #ccc; }
+
+        /* History List */
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 2px solid black;
+            background: white;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+        .history-item:hover {
+            padding-left: 20px;
+            background: var(--main-accent);
+            color: white;
+        }
+
+        /* Animations */
+        @keyframes glitch {
+            0% { transform: skew(0deg); }
+            20% { transform: skew(-2deg); }
+            40% { transform: skew(2deg); }
+            60% { transform: skew(0deg); }
+            100% { transform: skew(0deg); }
+        }
+        
+        .section-title {
+            background: black;
+            color: white;
+            display: inline-block;
+            padding: 5px 15px;
+            font-weight: 900;
+            font-size: 1.2rem;
+            transform: rotate(-1deg);
+            margin-bottom: 15px;
+            box-shadow: 4px 4px 0 var(--main-accent);
+        }
+    </style>
 </head>
 <body>
-    <div class="main-container">
-        <nav class="neo-box navbar">
-    <div class="brand" onclick="window.location.href='home.html'" style="cursor:pointer">ROOM CHAT</div>
-    <div class="nav-controls">
-        <span id="nav-username" class="user-tag">...</span>
-        <button onclick="handleLogout()" class="neo-btn" style="background:#ffcdd2">LOGOUT</button>
-    </div>
-</nav>
-
-        <div class="dashboard-layout">
-            <section class="neo-box profile-section">
-                <div style="border-bottom: 3px solid black; margin-bottom: 15px; display:flex; justify-content:space-between;">
-                    <h2>YOUR IDENTITY</h2>
-                    <div style="width:15px; height:15px; background:var(--success-color); border:2px solid black; border-radius:50%;"></div>
-                </div>
-
-                <div id="profile-view" class="profile-content">
-                    <div class="info-row">
-                        <span class="label">CODENAME:</span>
-                        <span id="display-username" class="value">...</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">CONTACT:</span>
-                        <span id="display-email" class="value">...</span>
-                    </div>
-                    <button onclick="toggleEditMode(true)" class="neo-btn action-btn">REWRITE IDENTITY</button>
-                </div>
-
-                <form id="profile-edit" class="profile-content hidden" onsubmit="handleProfileUpdate(event)">
-                    <div class="input-group">
-                        <label>NEW CODENAME</label>
-                        <input type="text" id="edit-username" required>
-                    </div>
-                    <div class="input-group">
-                        <label>NEW CONTACT</label>
-                        <input type="email" id="edit-email" required>
-                    </div>
-                    <div class="button-group">
-                        <button type="button" onclick="toggleEditMode(false)" class="neo-btn">CANCEL</button>
-                        <button type="submit" class="neo-btn" style="background-color: var(--success-color); flex:1;">SAVE</button>
-                    </div>
-                </form>
-
-                <div id="status-message" class="status-box hidden" style="margin-top:15px;"></div>
-            </section>
-
-            <section class="neo-box">
-                <h2>THE LOBBY</h2>
-                <hr style="border: 1px solid black; margin: 10px 0;">
-                <p>Select a frequency to begin transmission.</p>
-                <br>
-                <button class="neo-btn action-btn" onclick="alert('Coming soon!')">BROWSE ROOMS</button>
-            </section>
+    <nav class="navbar">
+        <div class="brand" onclick="window.location.href='home.html'">ROOM CHAT</div>
+        <div class="nav-controls">
+            <button onclick="handleLogout()" class="neo-btn" style="background:var(--error-color); color:white;">EJECT</button>
         </div>
+    </nav>
+
+    <div class="main-container">
+        
+        <div class="dashboard-grid">
+            
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                
+                <section class="neo-box identity-card">
+                    <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: var(--main-accent); border-radius: 50%; opacity: 0.5;"></div>
+                    
+                    <small>OPERATOR ID</small>
+                    <h1 id="display-username" class="glitch-text">LOADING...</h1>
+                    <p id="display-email" style="font-family: monospace; opacity: 0.8;">...</p>
+                    
+                    <div class="stats-row">
+                        <div class="stat-badge">LEVEL 3 ACCESS</div>
+                        <div class="stat-badge">ENCRYPTED</div>
+                    </div>
+
+                    <button onclick="toggleEditMode(true)" class="neo-btn" style="width: 100%;">EDIT CREDENTIALS</button>
+                </section>
+
+                <section id="edit-section" class="neo-box hidden" style="border-color: var(--main-accent);">
+                    <h3 style="margin-top: 0;">UPDATE CREDENTIALS</h3>
+                    <form onsubmit="handleProfileUpdate(event)">
+                        <div class="input-group">
+                            <label>CODENAME</label>
+                            <input type="text" id="edit-username">
+                        </div>
+                        <div class="input-group">
+                            <label>CONTACT FREQUENCY (EMAIL)</label>
+                            <input type="email" id="edit-email">
+                        </div>
+                        <div class="input-group">
+                            <label>NEW PASSPHRASE (OPTIONAL)</label>
+                            <input type="password" id="edit-password" placeholder="Leave empty to keep current">
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <button type="button" onclick="toggleEditMode(false)" class="neo-btn">CANCEL</button>
+                            <button type="submit" class="neo-btn" style="background: var(--success-color); flex: 1;">SAVE CHANGES</button>
+                        </div>
+                    </form>
+                </section>
+
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                
+                <section class="neo-box">
+                    <div class="section-title">ALLIES NETWORK</div>
+                    <div id="friends-grid" class="friend-grid">
+                        <div style="padding: 20px; opacity: 0.5;">Scanning network...</div>
+                    </div>
+                </section>
+
+                <section class="neo-box" style="background: var(--bg-color);">
+                    <div class="section-title">RECENT DIVES</div>
+                    <div id="history-list">
+                        </div>
+                </section>
+
+            </div>
+        </div>
+
+        <div id="status-message" class="status-box hidden" style="position: fixed; bottom: 20px; right: 20px; z-index: 100;"></div>
     </div>
 
     <script type="module" src="../scripts/dashboard.js"></script>

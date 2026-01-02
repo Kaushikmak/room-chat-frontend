@@ -2,63 +2,130 @@ import { API } from '../assets/js/api.js';
 import { UI } from '../assets/js/ui.js';
 
 // Auth Guard
-if (!API.isAuthenticated()) {
-    window.location.href = 'login.html';
+if (!API.isAuthenticated()) window.location.href = 'login.html';
+
+// --- INITIALIZATION ---
+async function init() {
+    await fetchProfile();
+    await fetchFriends();
+    renderHistory();
 }
 
-// Global Exports for HTML Buttons
-window.handleLogout = () => API.logout();
+// --- PROFILE LOGIC ---
+async function fetchProfile() {
+    const res = await API.request('/api/users/profile/', 'GET', null, true);
+    if (res.ok) {
+        const user = res.data;
+        document.getElementById('display-username').textContent = user.username;
+        document.getElementById('display-email').textContent = user.email;
+        
+        // Pre-fill edit form
+        document.getElementById('edit-username').value = user.username;
+        document.getElementById('edit-email').value = user.email;
+    }
+}
 
 window.toggleEditMode = (show) => {
-    const view = document.getElementById('profile-view');
-    const edit = document.getElementById('profile-edit');
-    const status = document.getElementById('status-message');
-    
-    if (show) {
-        view.classList.add('hidden');
-        edit.classList.remove('hidden');
-    } else {
-        edit.classList.add('hidden');
-        view.classList.remove('hidden');
-    }
-    status.classList.add('hidden');
+    const section = document.getElementById('edit-section');
+    if (show) section.classList.remove('hidden');
+    else section.classList.add('hidden');
 };
 
 window.handleProfileUpdate = async (e) => {
     e.preventDefault();
     const username = document.getElementById('edit-username').value;
     const email = document.getElementById('edit-email').value;
+    const password = document.getElementById('edit-password').value;
 
-    const res = await API.request('/api/users/profile/', 'PUT', { username, email }, true);
+    const payload = { username, email };
+    if (password) payload.password = password;
+
+    const res = await API.request('/api/users/profile/', 'PUT', payload, true);
 
     if (res.ok) {
-        UI.showStatus('status-message', "IDENTITY REWRITTEN", "success");
-        updateUI(res.data);
-        setTimeout(() => window.toggleEditMode(false), 1000);
+        UI.showStatus('status-message', "SYSTEM UPDATED SUCCESSFULLY", "success");
+        await fetchProfile(); // Refresh UI
+        window.toggleEditMode(false);
     } else {
-        UI.showStatus('status-message', "UPDATE FAILED", "error");
+        UI.showStatus('status-message', "UPDATE FAILED: " + JSON.stringify(res.data), "error");
     }
 };
 
-// Internal Logic
-async function fetchProfile() {
-    const res = await API.request('/api/users/profile/', 'GET', null, true);
+window.handleLogout = () => API.logout();
+
+// --- FRIENDS LOGIC ---
+async function fetchFriends() {
+    const res = await API.request('/api/users/friends/', 'GET', null, true);
     if (res.ok) {
-        updateUI(res.data);
-    } else {
-        if (res.status === 401) API.logout();
-        UI.showStatus('status-message', "FAILED TO LOAD DATA", "error");
+        renderFriends(res.data);
     }
 }
 
-function updateUI(user) {
-    document.getElementById('nav-username').textContent = user.username.toUpperCase();
-    document.getElementById('display-username').textContent = user.username;
-    document.getElementById('display-email').textContent = user.email || "N/A";
-    
-    document.getElementById('edit-username').value = user.username;
-    document.getElementById('edit-email').value = user.email || "";
+function renderFriends(friends) {
+    const container = document.getElementById('friends-grid');
+    if (friends.length === 0) {
+        container.innerHTML = '<div style="padding:10px; font-style:italic;">No allies found.</div>';
+        return;
+    }
+
+    container.innerHTML = friends.map(f => {
+        const lastLogin = f.friend.last_login ? new Date(f.friend.last_login) : null;
+        const now = new Date();
+        
+        // Simple logic: Online if active in last 15 minutes
+        const isOnline = lastLogin && (now - lastLogin) < (15 * 60 * 1000); 
+        const statusClass = isOnline ? 'status-online' : 'status-offline';
+        const timeText = lastLogin ? timeAgo(lastLogin) : 'Never';
+
+        return `
+        <div class="friend-card" onclick="window.location.href='home.html'">
+            <div style="font-weight:900; margin-bottom:5px;">${f.friend.username}</div>
+            <div style="font-size:0.75rem; color:#555;">
+                <span class="status-dot ${statusClass}"></span>
+                ${isOnline ? 'ONLINE' : timeText}
+            </div>
+        </div>
+        `;
+    }).join('');
 }
 
-// Init
-fetchProfile();
+// --- HISTORY LOGIC ---
+function renderHistory() {
+    const container = document.getElementById('history-list');
+    const history = JSON.parse(localStorage.getItem('room_history') || '[]');
+
+    if (history.length === 0) {
+        container.innerHTML = '<div style="padding:15px; opacity:0.6;">No dive logs recorded.</div>';
+        return;
+    }
+
+    container.innerHTML = history.map(item => `
+        <div class="history-item" onclick="window.location.href='home.html?room=${item.id}'">
+            <div>
+                <span style="font-weight:800;"># ${item.topic.toUpperCase()}</span> / 
+                <span>${item.name}</span>
+            </div>
+            <div style="font-size:0.8rem; opacity:0.6;">
+                ${new Date(item.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+            </div>
+        </div>
+    `).join('');
+}
+
+// Helper: Time Ago
+function timeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + " years ago";
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + " months ago";
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + " days ago";
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + "h ago";
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + "m ago";
+    return "Just now";
+}
+
+init();

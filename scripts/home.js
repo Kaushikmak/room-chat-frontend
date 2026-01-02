@@ -393,6 +393,7 @@ window.loadRoom = async (id) => {
     const res = await API.request(`/api/rooms/${id}/`);
     if (res.ok) {
         document.getElementById('active-room-name').textContent = res.data.name;
+        addToHistory(res.data);
         document.getElementById('chat-form').classList.remove('hidden');
         await fetchMessages(id);
         
@@ -400,6 +401,22 @@ window.loadRoom = async (id) => {
         window.pollInterval = setInterval(() => fetchMessages(id), 5000);
     }
 };
+function addToHistory(room) {
+    if (room.is_direct_message) return; // Don't track DMs in "Pages"
+    
+    let history = JSON.parse(localStorage.getItem('room_history') || '[]');
+    
+    // Remove duplicates
+    history = history.filter(r => r.id !== room.id);
+    
+    // Add to top
+    history.unshift({ id: room.id, name: room.name, topic: room.topic?.name || 'General', time: new Date() });
+    
+    // Keep last 5
+    if (history.length > 5) history.pop();
+    
+    localStorage.setItem('room_history', JSON.stringify(history));
+}
 
 async function fetchMessages(id) {
     const res = await API.request(`/api/rooms/${id}/messages/`);
