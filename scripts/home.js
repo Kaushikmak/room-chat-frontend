@@ -173,7 +173,9 @@ window.submitCreate = async (e) => {
             renderPublicList();
             window.closeModal();
         } else {
-            alert('Failed to create topic');
+            // FIX: Show specific error message from server
+            const errorMsg = res.data && res.data.detail ? res.data.detail : 'Failed to create topic';
+            alert(errorMsg);
         }
     } else {
         const topicId = document.getElementById('create-topic-select').value;
@@ -185,7 +187,9 @@ window.submitCreate = async (e) => {
             renderPublicList();
             window.closeModal();
         } else {
-            alert('Failed to create room');
+            // FIX: Show specific error message from server for rooms as well
+            const errorMsg = res.data && res.data.detail ? res.data.detail : 'Failed to create room';
+            alert(errorMsg);
         }
     }
 };
