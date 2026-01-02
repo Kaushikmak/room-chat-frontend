@@ -18,7 +18,7 @@
     /* DIMENSIONS */
     --border-width: 3px;
     --shadow-offset: 5px;
-    --radius: 0px;             /* Hard edges for brutalism */
+    --radius: 0px;             /* Hard edges */
     --nav-height: 70px;
 }
 

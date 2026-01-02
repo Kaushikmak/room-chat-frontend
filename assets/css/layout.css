@@ -13,7 +13,7 @@
     padding-top: calc(var(--nav-height) + 20px);
 }
 
-/* NAVBAR - Fixed & Sticky */
+/* NAVBAR - Fixed */
 .navbar {
     position: fixed;
     top: 0;
@@ -51,11 +51,11 @@
 /* APP GRID (Home Page) */
 .app-grid {
     display: grid;
-    grid-template-columns: 280px 1fr 280px;
+    grid-template-columns: 280px 1fr 280px; /* Fixed sidebars, fluid center */
     gap: 15px;
     width: 100%;
     max-width: 1600px;
-    height: calc(100vh - var(--nav-height) - 40px);
+    height: calc(100vh - var(--nav-height) - 40px); /* Full height minus nav and padding */
     margin: 0 auto;
 }
 
@@ -76,7 +76,7 @@
         height: auto;
     }
     .app-grid > aside, .app-grid > main {
-        height: 600px; /* Fixed height for scrollable areas on mobile */
+        height: 500px; /* Fixed height for scrollable areas on mobile */
         width: 100%;
     }
     .navbar { padding: 0 10px; }

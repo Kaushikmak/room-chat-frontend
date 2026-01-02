@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Room Chat | Terminal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="../assets/css/variables.css">
@@ -11,14 +13,12 @@
     <link rel="stylesheet" href="../assets/css/theme.css">
     
     <style>
-        /* Local overrides for scroll columns */
         .scroll-column { 
             overflow-y: auto; 
             height: 100%; 
             display: flex; 
             flex-direction: column; 
         }
-        /* Chat specific layout */
         .chat-layout {
             display: flex;
             flex-direction: column;
@@ -56,6 +56,7 @@
                 <div id="topics-list" style="margin-bottom: 15px;"></div>
                 <div id="rooms-list"></div>
             </div>
+            
             <div id="dms-nav-content" class="hidden">
                 <div id="dm-rooms-list"></div>
             </div>
