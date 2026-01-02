@@ -4,8 +4,26 @@ import { UI } from '../assets/js/ui.js';
 // Auth Guard
 if (!API.isAuthenticated()) window.location.href = 'login.html';
 
+// --- THEME LOGIC (NEW) ---
+window.toggleTheme = () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    const icon = document.getElementById('theme-icon');
+    if (icon) icon.textContent = next === 'dark' ? '🌙' : '☀️';
+};
+
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    const icon = document.getElementById('theme-icon');
+    if (icon) icon.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+}
+
 // --- INITIALIZATION ---
 async function init() {
+    initTheme(); // Apply theme on load
     await fetchProfile();
     await fetchFriends();
     renderHistory();

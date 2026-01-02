@@ -66,16 +66,17 @@
 
         /* ACCORDION STYLES */
         .topic-header {
-            padding: 12px;
-            border-bottom: 2px solid black;
-            background: white;
-            font-weight: 800;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .topic-header:hover { background: var(--secondary-accent); }
+    padding: 12px;
+    border-bottom: 2px solid black;
+    background: var(--box-bg); /* CHANGED from white */
+    color: var(--box-text);    /* ADDED */
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.topic-header:hover { background: var(--secondary-accent); color: black; } /* Hover stays punchy */
         
         .room-sublist {
             background: rgba(0,0,0,0.05);
@@ -85,13 +86,15 @@
         .room-sublist.expanded { display: block; }
         
         .room-item {
-            padding: 10px 10px 10px 25px; /* Indent */
-            font-size: 0.9rem;
-            cursor: pointer;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-            font-weight: 600;
-        }
-        .room-item:hover { background: var(--main-accent); color: white; }
+    padding: 10px 10px 10px 25px; 
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--box-text); /* CHANGED from rgba(0,0,0,0.1) for visibility */
+    opacity: 0.7; /* Added opacity for hierarchy */
+    font-weight: 600;
+    color: var(--box-text); /* ADDED */
+}
+.room-item:hover { background: var(--main-accent); color: white; opacity: 1; }
         .room-item:last-child { border-bottom: none; }
 
         /* MODAL */
@@ -123,7 +126,7 @@
 .search-dropdown {
     position: absolute;
     width: 100%;
-    background: white;
+    background: var(--box-bg);
     border: 2px solid black;
     border-top: none;
     max-height: 150px;
@@ -136,7 +139,8 @@
     padding: 10px;
     cursor: pointer;
     font-weight: bold;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--box-text);
+    color: var(--box-text);
     display: flex;
     justify-content: space-between;
 }
@@ -158,7 +162,8 @@
 .activity-item {
     padding: 12px;
     border-bottom: 2px solid black;
-    background: white;
+    background: var(--box-bg); /* CHANGED from white */
+    color: var(--box-text);    /* ADDED */
     font-size: 0.85rem;
     line-height: 1.4;
     transition: background 0.2s;
@@ -175,7 +180,7 @@
 
 .act-context {
     font-weight: 700;
-    color: black;
+    color: var(--box-text);
 }
 
 .act-time {
