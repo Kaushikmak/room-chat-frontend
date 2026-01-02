@@ -26,11 +26,14 @@ window.showTab = (type) => {
 async function init() {
     if (!API.isAuthenticated()) window.location.href = 'login.html';
     
+    // FIX: Sync identity with server to ensure "me" is correct
+    await verifyUserIdentity();
+
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
     document.getElementById('theme-icon').textContent = savedTheme === 'dark' ? '🌙' : '☀️';
     
-    setAvatar();
+    // No need to call setAvatar() here, verifyUserIdentity does it
     
     // Fetch Data
     await Promise.all([fetchTopics(), fetchRooms(), fetchFriends(), fetchActivity()]);
@@ -38,6 +41,14 @@ async function init() {
     // Render
     renderPublicList();
     renderDmList();
+}
+
+async function verifyUserIdentity() {
+    const res = await API.request('/api/users/profile/', 'GET', null, true);
+    if (res.ok) {
+        localStorage.setItem('username', res.data.username);
+        setAvatar(); // Update avatar now that we are sure of the name
+    }
 }
 
 // --- DATA FETCHING ---
@@ -420,10 +431,14 @@ function addToHistory(room) {
 
 async function fetchMessages(id) {
     const res = await API.request(`/api/rooms/${id}/messages/`);
-    const me = localStorage.getItem('username');
+    // Get latest username from storage
+    const me = localStorage.getItem('username'); 
+    
     if (res.ok) {
         document.getElementById('messages-container').innerHTML = res.data.map(m => {
-            const isMine = m.user.username === me;
+            // FIX: Case-insensitive comparison for robustness
+            const isMine = m.user.username.toLowerCase() === (me ? me.toLowerCase() : '');
+            
             return `
                 <div class="message-row ${isMine ? 'mine' : 'theirs'}">
                     <div class="message-bubble ${isMine ? 'mine' : 'theirs'}">

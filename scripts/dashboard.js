@@ -61,8 +61,11 @@ window.handleProfileUpdate = async (e) => {
     const res = await API.request('/api/users/profile/', 'PUT', payload, true);
 
     if (res.ok) {
+        // FIX: Update LocalStorage immediately so Chat knows who we are
+        if (payload.username) localStorage.setItem('username', payload.username);
+        
         UI.showStatus('status-message', "SYSTEM UPDATED SUCCESSFULLY", "success");
-        await fetchProfile(); // Refresh UI
+        await fetchProfile(); 
         window.toggleEditMode(false);
     } else {
         UI.showStatus('status-message', "UPDATE FAILED: " + JSON.stringify(res.data), "error");
