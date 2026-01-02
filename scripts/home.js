@@ -290,19 +290,23 @@ window.renderDmList = () => {
 };
 
 window.openDm = async (username) => {
-    let targetRoom = allRooms.find(r => r.is_direct_message && r.name === username);
-    if (!targetRoom) {
-        const res = await API.request('/api/rooms/', 'POST', { name: username, is_direct_message: true }, true);
-        if (res.ok) {
-            targetRoom = res.data;
-            allRooms.push(targetRoom);
-        } else {
-            await fetchRooms();
-            targetRoom = allRooms.find(r => r.is_direct_message && r.name === username);
-            if (!targetRoom) return; 
-        }
+    // We use the specific 'chat/start/' endpoint which handles "Find or Create" logic on the backend
+    const res = await API.request('/api/chat/start/', 'POST', { username: username }, true);
+    
+    if (res.ok) {
+        const room = res.data;
+        
+        // Load the room we received (which contains the ID of the existing history)
+        await window.loadRoom(room.id);
+        
+        // Optional: Override the header to show just the friend's name instead of "DM: user & friend"
+        const headerName = document.getElementById('active-room-name');
+        if(headerName) headerName.textContent = "@" + username.toUpperCase();
+        
+    } else {
+        console.error("Failed to open DM", res);
+        alert("Could not open transmission line.");
     }
-    if (targetRoom) window.loadRoom(targetRoom.id);
 };
 
 window.loadRoom = async (id) => {
