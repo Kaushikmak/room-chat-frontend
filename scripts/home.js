@@ -201,6 +201,57 @@ window.renderPublicList = (filterText = "") => {
     }
 };
 
+let searchTimeout = null;
+
+window.handleUserSearch = (e) => {
+    const query = e.target.value.trim();
+    const dropdown = document.getElementById('search-dropdown-container');
+    
+    // Clear previous timeout (Debouncing)
+    if (searchTimeout) clearTimeout(searchTimeout);
+
+    if (query.length < 2) {
+        dropdown.classList.add('hidden');
+        return;
+    }
+
+    // Wait 300ms before hitting API to save requests
+    searchTimeout = setTimeout(async () => {
+        const res = await API.request(`/api/users/search/?q=${query}`, 'GET', null, true);
+        
+        if (res.ok && res.data.length > 0) {
+            dropdown.innerHTML = res.data.map(user => `
+                <div class="dropdown-item" onclick="window.selectSearchUser('${user.username}')">
+                    <span>${user.username}</span>
+                    ${user.username.toLowerCase().includes(query.toLowerCase()) ? '' : '<span class="match-tag">PHONETIC</span>'}
+                </div>
+            `).join('');
+            dropdown.classList.remove('hidden');
+        } else {
+            dropdown.innerHTML = `<div style="padding:10px; opacity:0.6; font-style:italic;">No agents found.</div>`;
+            dropdown.classList.remove('hidden');
+        }
+    }, 300);
+};
+
+window.selectSearchUser = (username) => {
+    // Populate input
+    document.getElementById('add-friend-input').value = username;
+    // Hide dropdown
+    document.getElementById('search-dropdown-container').classList.add('hidden');
+    // Optional: Auto-submit
+    // window.handleAddFriend(new Event('submit')); 
+};
+
+// Close dropdown if clicking outside
+document.addEventListener('click', (e) => {
+    const container = document.getElementById('search-dropdown-container');
+    const input = document.getElementById('add-friend-input');
+    if (e.target !== container && e.target !== input) {
+        container.classList.add('hidden');
+    }
+});
+
 window.toggleTopic = (id) => {
     if (expandedTopics.has(id)) expandedTopics.delete(id);
     else expandedTopics.add(id);

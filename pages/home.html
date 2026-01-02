@@ -119,6 +119,40 @@
             cursor: pointer;
             font-size: 0.7rem;
         }
+        /* DROPDOWN STYLES */
+.search-dropdown {
+    position: absolute;
+    width: 100%;
+    background: white;
+    border: 2px solid black;
+    border-top: none;
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 10;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+}
+
+.dropdown-item {
+    padding: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+}
+
+.dropdown-item:hover {
+    background: var(--main-accent);
+    color: white;
+}
+
+.dropdown-item .match-tag {
+    font-size: 0.7rem;
+    background: black;
+    color: white;
+    padding: 2px 5px;
+    border-radius: 4px;
+}
     </style>
 </head>
 <body>
@@ -223,13 +257,19 @@
                 <button onclick="window.closeFriendsModal()" style="border: none; background: none; font-weight: 900; font-size: 1.2rem; cursor: pointer;">X</button>
             </div>
 
-            <form onsubmit="window.handleAddFriend(event)" style="border-bottom: 3px solid black; padding-bottom: 15px; margin-bottom: 15px;">
-                <label style="font-weight: 800; font-size: 0.8rem;">ADD BY CODENAME</label>
-                <div style="display: flex; gap: 5px; margin-top: 5px;">
-                    <input type="text" id="add-friend-input" placeholder="Exact username..." required>
-                    <button type="submit" class="neo-btn" style="background: var(--success-color); padding: 5px 10px;">ADD</button>
-                </div>
-            </form>
+            <form onsubmit="window.handleAddFriend(event)" style="border-bottom: 3px solid black; padding-bottom: 15px; margin-bottom: 15px; position: relative;">
+    <label style="font-weight: 800; font-size: 0.8rem;">ADD BY CODENAME</label>
+    
+    <div style="display: flex; gap: 5px; margin-top: 5px;">
+        <div style="position: relative; flex-grow: 1;">
+            <input type="text" id="add-friend-input" placeholder="Type to search..." required autocomplete="off" onkeyup="window.handleUserSearch(event)">
+            
+            <div id="search-dropdown-container" class="search-dropdown hidden"></div>
+        </div>
+        
+        <button type="submit" class="neo-btn" style="background: var(--success-color); padding: 5px 10px;">ADD</button>
+    </div>
+</form>
 
             <div style="margin-bottom: 10px;">
                 <input type="text" id="filter-friends-input" placeholder="Search my list..." onkeyup="window.filterFriends(event)" style="padding: 8px;">
