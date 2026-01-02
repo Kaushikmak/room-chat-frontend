@@ -31,6 +31,76 @@
             background: rgba(0,0,0,0.02);
             border-bottom: 2px solid black;
         }
+        
+        /* SEARCH & TOOLS */
+        .toolbar {
+            padding: 10px;
+            border-bottom: 3px solid black;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid black;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        .action-row {
+            display: flex;
+            gap: 5px;
+        }
+        .mini-btn {
+            flex: 1;
+            padding: 5px;
+            font-size: 0.7rem;
+            border: 2px solid black;
+            background: white;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 2px 2px 0 black;
+        }
+        .mini-btn:active { transform: translate(1px, 1px); box-shadow: none; }
+
+        /* ACCORDION STYLES */
+        .topic-header {
+            padding: 12px;
+            border-bottom: 2px solid black;
+            background: white;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .topic-header:hover { background: var(--secondary-accent); }
+        
+        .room-sublist {
+            background: rgba(0,0,0,0.05);
+            display: none; /* Hidden by default */
+            border-bottom: 2px solid black;
+        }
+        .room-sublist.expanded { display: block; }
+        
+        .room-item {
+            padding: 10px 10px 10px 25px; /* Indent */
+            font-size: 0.9rem;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            font-weight: 600;
+        }
+        .room-item:hover { background: var(--main-accent); color: white; }
+        .room-item:last-child { border-bottom: none; }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            display: flex; align-items: center; justify-content: center;
+        }
     </style>
 </head>
 <body>
@@ -45,16 +115,25 @@
     </nav>
 
     <div class="app-grid">
-        <aside class="neo-box scroll-column">
-            <h3 style="border-bottom: 3px solid black; padding-bottom: 10px; margin-top: 0;">TERMINALS</h3>
-            <div class="auth-tabs">
-                <button id="btn-rooms" class="neo-btn tab active" onclick="window.showTab('rooms')">PUBLIC</button>
-                <button id="btn-dms" class="neo-btn tab" onclick="window.showTab('dms')">DM</button>
+        <aside class="neo-box scroll-column" style="padding: 0;">
+            <div style="padding: 15px; padding-bottom: 0;">
+                <h3 style="margin: 0; margin-bottom: 10px;">TERMINALS</h3>
+                <div class="auth-tabs">
+                    <button id="btn-rooms" class="neo-btn tab active" onclick="window.showTab('rooms')">PUBLIC</button>
+                    <button id="btn-dms" class="neo-btn tab" onclick="window.showTab('dms')">DM</button>
+                </div>
             </div>
-            
+
             <div id="rooms-nav-content">
-                <div id="topics-list" style="margin-bottom: 15px;"></div>
-                <div id="rooms-list"></div>
+                <div class="toolbar">
+                    <input type="text" id="search-input" class="search-input" placeholder="SEARCH FREQUENCY..." onkeyup="window.handleSearch(event)">
+                    <div class="action-row">
+                        <button class="mini-btn" onclick="window.openCreateModal('topic')">+ TOPIC</button>
+                        <button class="mini-btn" onclick="window.openCreateModal('room')">+ ROOM</button>
+                    </div>
+                </div>
+                <div id="public-list-container">
+                    </div>
             </div>
             
             <div id="dms-nav-content" class="hidden">
@@ -87,6 +166,31 @@
             <h4>ACTIVITY</h4>
             <div id="activity-feed" style="font-size: 0.9rem;"></div>
         </aside>
+    </div>
+
+    <div id="create-modal" class="modal-overlay hidden">
+        <div class="neo-box" style="width: 300px; background: var(--bg-color);">
+            <h3 id="modal-title" style="margin-top: 0;">CREATE NEW</h3>
+            <form onsubmit="window.submitCreate(event)">
+                <input type="hidden" id="create-type">
+                
+                <div class="input-group">
+                    <label>NAME</label>
+                    <input type="text" id="create-name" required placeholder="Enter name...">
+                </div>
+
+                <div id="topic-select-group" class="input-group hidden">
+                    <label>PARENT TOPIC</label>
+                    <select id="create-topic-select" style="width: 100%; border: 3px solid black; padding: 10px; font-weight: bold;">
+                        </select>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button type="button" class="neo-btn" onclick="window.closeModal()">CANCEL</button>
+                    <button type="submit" class="neo-btn" style="background: var(--success-color); flex: 1;">CREATE</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script type="module" src="../scripts/home.js"></script>

@@ -2,9 +2,11 @@ import { API } from '../assets/js/api.js';
 
 let currentRoomId = null;
 let allRooms = [];
+let allTopics = [];
 let allFriends = [];
+let expandedTopics = new Set(); // Tracks which topics are open
 
-// UI & Theme
+// --- UI & THEME ---
 window.toggleTheme = () => {
     const current = document.documentElement.getAttribute('data-theme');
     const next = current === 'dark' ? 'light' : 'dark';
@@ -20,64 +22,181 @@ window.showTab = (type) => {
     document.getElementById('btn-dms').classList.toggle('active', type === 'dms');
 };
 
-// Data Loading
+// --- INIT ---
 async function init() {
     if (!API.isAuthenticated()) window.location.href = 'login.html';
     
-    // Set Theme
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
     document.getElementById('theme-icon').textContent = savedTheme === 'dark' ? '🌙' : '☀️';
     
     setAvatar();
     
-    // Fetch all data
+    // Fetch Data
     await Promise.all([fetchTopics(), fetchRooms(), fetchFriends(), fetchActivity()]);
     
-    // Initial render of Friends in the DM tab
+    // Render
+    renderPublicList();
     renderDmList();
 }
 
+// --- DATA FETCHING ---
 async function fetchRooms() {
     const res = await API.request('/api/rooms/');
-    if (res.ok) {
-        allRooms = res.data;
-        // Filter public rooms
-        const publicRooms = allRooms.filter(r => !r.is_direct_message);
-        
-        // Render Public Rooms list
-        document.getElementById('rooms-list').innerHTML = publicRooms.map(r => `
-            <div class="list-item" onclick="window.loadRoom('${r.id}')">
-                <div style="display:flex; justify-content:space-between;">
-                    <span>${r.name}</span>
-                    <span style="font-size:0.8em; opacity:0.6;">OPEN</span>
-                </div>
-            </div>
-        `).join('');
-    }
+    if (res.ok) allRooms = res.data;
+}
+
+async function fetchTopics() {
+    const res = await API.request('/api/topics/');
+    if (res.ok) allTopics = res.data;
 }
 
 async function fetchFriends() {
     const res = await API.request('/api/users/friends/', 'GET', null, true);
     if (res.ok) {
         allFriends = res.data;
-        
-        // Render Right Sidebar (Data Stream)
         document.getElementById('friends-list').innerHTML = allFriends.map(f => 
             `<div class="list-item" onclick="window.openDm('${f.friend.username}')">@${f.friend.username}</div>`
         ).join('');
     }
 }
 
-function renderDmList() {
-    // Render Friends in Left Sidebar (DM Tab)
-    const container = document.getElementById('dm-rooms-list');
+async function fetchActivity() {
+    const res = await API.request('/api/activity/');
+    if (res.ok) document.getElementById('activity-feed').innerHTML = res.data.map(a => `<div class="list-item">${a.body}</div>`).join('');
+}
+
+// --- RENDER LOGIC (OPTION A) ---
+window.renderPublicList = (filterText = "") => {
+    const container = document.getElementById('public-list-container');
+    container.innerHTML = "";
+
+    const cleanFilter = filterText.toLowerCase();
+
+    // Filter Topics
+    const visibleTopics = allTopics.filter(t => t.name.toLowerCase().includes(cleanFilter));
+
+    visibleTopics.forEach(topic => {
+        // Find rooms for this topic
+        // Matching Logic: Checks if room.topic.id == topic.id OR room.topic == topic.id
+        const topicRooms = allRooms.filter(r => {
+            if (r.is_direct_message) return false; // Hide DMs from Public tab
+            
+            // Search Filter for Rooms
+            if (cleanFilter && !r.name.toLowerCase().includes(cleanFilter) && !topic.name.toLowerCase().includes(cleanFilter)) {
+                return false; 
+            }
+
+            // Relationship Match
+            if (typeof r.topic === 'object' && r.topic !== null) return r.topic.id === topic.id;
+            return r.topic === topic.id;
+        });
+
+        // If filtering, expand all. Otherwise respect user toggle.
+        const isExpanded = expandedTopics.has(topic.id) || cleanFilter.length > 0;
+        const arrow = isExpanded ? '▼' : '▶';
+
+        const html = `
+            <div class="topic-group">
+                <div class="topic-header" onclick="window.toggleTopic(${topic.id})">
+                    <span># ${topic.name.toUpperCase()}</span>
+                    <span>${arrow}</span>
+                </div>
+                <div class="room-sublist ${isExpanded ? 'expanded' : ''}" id="topic-rooms-${topic.id}">
+                    ${topicRooms.length ? topicRooms.map(r => `
+                        <div class="room-item" onclick="window.loadRoom('${r.id}')">
+                            ${r.name}
+                        </div>
+                    `).join('') : '<div class="room-item" style="font-style:italic; opacity:0.6;">No channels</div>'}
+                </div>
+            </div>
+        `;
+        container.innerHTML += html;
+    });
+
+    // Handle "Uncategorized" Rooms (Optional, if any exist without topic)
+    const uncategorized = allRooms.filter(r => !r.is_direct_message && !r.topic);
+    if (uncategorized.length > 0) {
+        container.innerHTML += `<div class="topic-header" style="background: #eee;">OTHER</div>`;
+        uncategorized.forEach(r => {
+            container.innerHTML += `<div class="room-item" onclick="window.loadRoom('${r.id}')">${r.name}</div>`;
+        });
+    }
+};
+
+window.toggleTopic = (id) => {
+    if (expandedTopics.has(id)) expandedTopics.delete(id);
+    else expandedTopics.add(id);
+    renderPublicList(document.getElementById('search-input').value);
+};
+
+window.handleSearch = (e) => {
+    renderPublicList(e.target.value);
+};
+
+// --- MODAL & CREATE LOGIC ---
+window.openCreateModal = (type) => {
+    const modal = document.getElementById('create-modal');
+    const title = document.getElementById('modal-title');
+    const hiddenType = document.getElementById('create-type');
+    const topicGroup = document.getElementById('topic-select-group');
+    const select = document.getElementById('create-topic-select');
+
+    modal.classList.remove('hidden');
+    hiddenType.value = type;
+    document.getElementById('create-name').value = '';
+
+    if (type === 'topic') {
+        title.textContent = "CREATE TOPIC";
+        topicGroup.classList.add('hidden');
+    } else {
+        title.textContent = "CREATE ROOM";
+        topicGroup.classList.remove('hidden');
+        // Populate Topic Select
+        select.innerHTML = allTopics.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+    }
+};
+
+window.closeModal = () => {
+    document.getElementById('create-modal').classList.add('hidden');
+};
+
+window.submitCreate = async (e) => {
+    e.preventDefault();
+    const type = document.getElementById('create-type').value;
+    const name = document.getElementById('create-name').value;
     
+    if (type === 'topic') {
+        const res = await API.request('/api/topics/', 'POST', { name }, true);
+        if (res.ok) {
+            await fetchTopics();
+            renderPublicList();
+            window.closeModal();
+        } else {
+            alert('Failed to create topic');
+        }
+    } else {
+        const topicId = document.getElementById('create-topic-select').value;
+        const res = await API.request('/api/rooms/', 'POST', { name, topic: topicId }, true);
+        if (res.ok) {
+            await fetchRooms();
+            // Auto expand the topic we just added to
+            expandedTopics.add(parseInt(topicId));
+            renderPublicList();
+            window.closeModal();
+        } else {
+            alert('Failed to create room');
+        }
+    }
+};
+
+// --- DM & CHAT LOGIC (Preserved) ---
+window.renderDmList = () => {
+    const container = document.getElementById('dm-rooms-list');
     if (allFriends.length === 0) {
         container.innerHTML = '<div style="padding:10px; opacity:0.7;">No friends found.</div>';
         return;
     }
-    
     container.innerHTML = allFriends.map(f => {
         const username = f.friend.username;
         return `
@@ -90,39 +209,22 @@ function renderDmList() {
             </div>
         </div>`;
     }).join('');
-}
+};
 
-// Logic to Open Chat when Friend is Clicked
 window.openDm = async (username) => {
-    // 1. Check if we already have a DM room with this friend
     let targetRoom = allRooms.find(r => r.is_direct_message && r.name === username);
-    
-    // 2. If not found, create a new DM room
     if (!targetRoom) {
-        // Optimistic UI could go here, but let's wait for server
-        const res = await API.request('/api/rooms/', 'POST', { 
-            name: username, 
-            is_direct_message: true 
-        }, true);
-        
+        const res = await API.request('/api/rooms/', 'POST', { name: username, is_direct_message: true }, true);
         if (res.ok) {
             targetRoom = res.data;
-            allRooms.push(targetRoom); // Update local cache
+            allRooms.push(targetRoom);
         } else {
-            console.error("Failed to create DM");
-            // If creation fails, re-fetch rooms in case it existed but wasn't synced
             await fetchRooms();
             targetRoom = allRooms.find(r => r.is_direct_message && r.name === username);
             if (!targetRoom) return; 
         }
     }
-    
-    // 3. Load the room
-    if (targetRoom) {
-        window.loadRoom(targetRoom.id);
-        // Ensure DM tab is visible if we clicked from elsewhere
-        // window.showTab('dms'); 
-    }
+    if (targetRoom) window.loadRoom(targetRoom.id);
 };
 
 window.loadRoom = async (id) => {
@@ -167,16 +269,6 @@ window.sendMessage = async (e) => {
 function setAvatar() {
     const user = localStorage.getItem('username') || "U";
     document.getElementById('user-avatar').textContent = user.charAt(0).toUpperCase();
-}
-
-async function fetchTopics() {
-    const res = await API.request('/api/topics/');
-    if (res.ok) document.getElementById('topics-list').innerHTML = res.data.map(t => `<div class="list-item"># ${t.name}</div>`).join('');
-}
-
-async function fetchActivity() {
-    const res = await API.request('/api/activity/');
-    if (res.ok) document.getElementById('activity-feed').innerHTML = res.data.map(a => `<div class="list-item">${a.body}</div>`).join('');
 }
 
 init();
