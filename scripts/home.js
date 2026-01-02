@@ -25,18 +25,14 @@ window.showTab = (type) => {
 // --- INIT ---
 async function init() {
     if (!API.isAuthenticated()) window.location.href = 'login.html';
-    
-    // Ensure we know who the user is for permission checks
     await verifyUserIdentity();
-
+    
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
     document.getElementById('theme-icon').textContent = savedTheme === 'dark' ? '🌙' : '☀️';
     
-    // Fetch Data
     await Promise.all([fetchTopics(), fetchRooms(), fetchFriends(), fetchActivity()]);
     
-    // Render
     renderPublicList();
     renderDmList();
 }
@@ -104,14 +100,13 @@ window.renderPublicList = (filterText = "") => {
     const cleanFilter = filterText.toLowerCase();
     const myUsername = localStorage.getItem('username');
 
-    // Helper: Generate HTML for a room item with conditional buttons
+    // Helper: Room HTML with Neo-Brutalist Actions
     const getRoomHtml = (r) => {
         const isOwner = r.host && r.host.username === myUsername;
-        // If owner, show Edit (pencil) and Delete (x) buttons
         const actions = isOwner ? `
             <span class="room-actions">
-                <button onclick="window.editRoom('${r.id}', '${r.name}', event)" title="Edit">✎</button>
-                <button onclick="window.deleteRoom('${r.id}', event)" title="Delete" style="color:var(--error-color)">×</button>
+                <div class="action-btn btn-edit" onclick="window.openEditRoom('${r.id}', '${r.name}', event)" title="Edit">✎</div>
+                <div class="action-btn btn-delete" onclick="window.openDeleteRoom('${r.id}', event)" title="Delete">×</div>
             </span>` : '';
 
         return `
@@ -125,12 +120,9 @@ window.renderPublicList = (filterText = "") => {
     const visibleTopics = allTopics.filter(t => t.name.toLowerCase().includes(cleanFilter));
 
     visibleTopics.forEach(topic => {
-        // Find rooms for this topic
         const topicRooms = allRooms.filter(r => {
             if (r.is_direct_message) return false;
-            // Search filter
             if (cleanFilter && !r.name.toLowerCase().includes(cleanFilter) && !topic.name.toLowerCase().includes(cleanFilter)) return false;
-            // Match Topic ID
             if (typeof r.topic === 'object' && r.topic !== null) return r.topic.id === topic.id;
             return r.topic === topic.id;
         });
@@ -152,10 +144,9 @@ window.renderPublicList = (filterText = "") => {
         container.innerHTML += html;
     });
 
-    // Handle "Other" Rooms (Uncategorized)
+    // Handle "Other" Rooms
     const uncategorized = allRooms.filter(r => !r.is_direct_message && !r.topic);
     if (uncategorized.length > 0) {
-        // Removed inline style so it respects dark mode theme
         container.innerHTML += `<div class="topic-header">OTHER / GENERAL</div>`;
         uncategorized.forEach(r => {
             container.innerHTML += getRoomHtml(r);
@@ -163,45 +154,71 @@ window.renderPublicList = (filterText = "") => {
     }
 };
 
-// --- ROOM ACTIONS (NEW) ---
-window.deleteRoom = async (id, e) => {
-    e.stopPropagation(); // Stop bubbling (don't open the room)
-    if (!confirm("Are you sure you want to delete this room?")) return;
+// --- NEW ROOM ACTION LOGIC (No Alerts) ---
+
+// Edit Logic
+window.openEditRoom = (id, currentName, e) => {
+    e.stopPropagation();
+    document.getElementById('edit-room-id').value = id;
+    document.getElementById('edit-room-name').value = currentName;
+    document.getElementById('edit-room-modal').classList.remove('hidden');
+};
+
+window.closeEditModal = () => {
+    document.getElementById('edit-room-modal').classList.add('hidden');
+};
+
+window.submitEditRoom = async () => {
+    const id = document.getElementById('edit-room-id').value;
+    const newName = document.getElementById('edit-room-name').value;
+    
+    if (!newName) return;
+
+    const res = await API.request(`/api/rooms/${id}/`, 'PUT', { name: newName }, true);
+    if (res.ok) {
+        await fetchRooms();
+        renderPublicList();
+        // Update header if active
+        if (currentRoomId == id) {
+            document.getElementById('active-room-name').textContent = newName;
+        }
+        window.closeEditModal();
+    } else {
+        alert("Update failed.");
+    }
+};
+
+// Delete Logic
+window.openDeleteRoom = (id, e) => {
+    e.stopPropagation();
+    document.getElementById('delete-room-id').value = id;
+    document.getElementById('delete-room-modal').classList.remove('hidden');
+};
+
+window.closeDeleteModal = () => {
+    document.getElementById('delete-room-modal').classList.add('hidden');
+};
+
+window.confirmDeleteRoom = async () => {
+    const id = document.getElementById('delete-room-id').value;
     
     const res = await API.request(`/api/rooms/${id}/`, 'DELETE', null, true);
     if (res.ok) {
         await fetchRooms();
         renderPublicList();
-        // If we deleted the currently active room, reset the view
         if (currentRoomId == id) {
             document.getElementById('active-room-name').textContent = "READY...";
             document.getElementById('messages-container').innerHTML = '<div style="text-align: center; margin-top: 50px; opacity: 0.5;">SELECT A TERMINAL</div>';
             document.getElementById('chat-form').classList.add('hidden');
             currentRoomId = null;
         }
+        window.closeDeleteModal();
     } else {
-        alert("Failed to delete room.");
+        alert("Deletion failed.");
     }
 };
 
-window.editRoom = async (id, oldName, e) => {
-    e.stopPropagation(); // Stop bubbling
-    const newName = prompt("Rename Room:", oldName);
-    if (newName && newName !== oldName) {
-        const res = await API.request(`/api/rooms/${id}/`, 'PUT', { name: newName }, true);
-        if (res.ok) {
-            await fetchRooms();
-            renderPublicList();
-            // Update header if we are currently in this room
-            if (currentRoomId == id) {
-                document.getElementById('active-room-name').textContent = newName;
-            }
-        } else {
-            alert("Failed to update room.");
-        }
-    }
-};
-
+// --- EXISTING TOGGLES ---
 window.toggleTopic = (id) => {
     if (expandedTopics.has(id)) expandedTopics.delete(id);
     else expandedTopics.add(id);
@@ -230,7 +247,6 @@ window.openCreateModal = (type) => {
     } else {
         title.textContent = "CREATE ROOM";
         topicGroup.classList.remove('hidden');
-        // Populate Topic Select with "Other" option
         select.innerHTML = `<option value="">-- Other / General --</option>` + 
             allTopics.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
     }
@@ -256,7 +272,6 @@ window.submitCreate = async (e) => {
             alert(errorMsg);
         }
     } else {
-        // Handle "Other" selection (empty string -> null)
         let topicId = document.getElementById('create-topic-select').value;
         if (topicId === "") topicId = null;
 
@@ -273,7 +288,7 @@ window.submitCreate = async (e) => {
     }
 };
 
-// --- DM & FRIENDS LOGIC ---
+// --- DM & FRIENDS LOGIC (Preserved) ---
 window.renderDmList = () => {
     const container = document.getElementById('dm-rooms-list');
     if (allFriends.length === 0) {
@@ -356,7 +371,7 @@ window.sendMessage = async (e) => {
     if (res.ok) { input.value = ''; await fetchMessages(currentRoomId); }
 };
 
-// --- USER SEARCH ---
+// ... (Search & Friend Logic kept same) ...
 let searchTimeout = null;
 window.handleUserSearch = (e) => {
     const query = e.target.value.trim();
@@ -378,65 +393,23 @@ window.handleUserSearch = (e) => {
         }
     }, 300);
 };
-
 window.selectSearchUser = (username) => {
     document.getElementById('add-friend-input').value = username;
     document.getElementById('search-dropdown-container').classList.add('hidden');
 };
-
 document.addEventListener('click', (e) => {
     const container = document.getElementById('search-dropdown-container');
     const input = document.getElementById('add-friend-input');
     if (e.target !== container && e.target !== input) container.classList.add('hidden');
 });
 
-// --- FRIEND MANAGEMENT ---
-window.openManageFriends = () => {
-    document.getElementById('friends-modal').classList.remove('hidden');
-    document.getElementById('add-friend-input').value = '';
-    document.getElementById('filter-friends-input').value = '';
-    renderManageFriendsList();
-};
-
-window.closeFriendsModal = () => {
-    document.getElementById('friends-modal').classList.add('hidden');
-};
-
-window.renderManageFriendsList = (filterText = "") => {
-    const container = document.getElementById('manage-friends-list');
-    const cleanFilter = filterText.toLowerCase();
-    const filtered = allFriends.filter(f => f.friend.username.toLowerCase().includes(cleanFilter));
-    if (filtered.length === 0) {
-        container.innerHTML = '<div style="padding:15px; text-align:center; opacity:0.6;">No allies found.</div>';
-        return;
-    }
-    container.innerHTML = filtered.map(f => `
-        <div class="friend-row">
-            <span style="font-weight:600;">@${f.friend.username}</span>
-            <button onclick="window.handleRemoveFriend('${f.friend.username}')">REMOVE</button>
-        </div>`).join('');
-};
-
+// ... (Friend Management) ...
+window.openManageFriends = () => { document.getElementById('friends-modal').classList.remove('hidden'); document.getElementById('add-friend-input').value = ''; document.getElementById('filter-friends-input').value = ''; renderManageFriendsList(); };
+window.closeFriendsModal = () => { document.getElementById('friends-modal').classList.add('hidden'); };
+window.renderManageFriendsList = (filterText = "") => { const container = document.getElementById('manage-friends-list'); const cleanFilter = filterText.toLowerCase(); const filtered = allFriends.filter(f => f.friend.username.toLowerCase().includes(cleanFilter)); if (filtered.length === 0) { container.innerHTML = '<div style="padding:15px; text-align:center; opacity:0.6;">No allies found.</div>'; return; } container.innerHTML = filtered.map(f => `<div class="friend-row"><span style="font-weight:600;">@${f.friend.username}</span><button onclick="window.handleRemoveFriend('${f.friend.username}')">REMOVE</button></div>`).join(''); };
 window.filterFriends = (e) => { renderManageFriendsList(e.target.value); };
-
-window.handleAddFriend = async (e) => {
-    e.preventDefault();
-    const input = document.getElementById('add-friend-input');
-    const username = input.value.trim();
-    if (!username) return;
-    const res = await API.request('/api/users/friends/', 'POST', { username }, true);
-    if (res.ok) {
-        if (res.data.status === 'Already friends') { alert("You are already allies."); }
-        else { input.value = ''; await fetchFriends(); renderManageFriendsList(); }
-    } else { alert(res.data.detail || "Failed to add friend. Check spelling."); }
-};
-
-window.handleRemoveFriend = async (username) => {
-    if (!confirm(`Sever alliance with @${username}?`)) return;
-    const res = await API.request(`/api/users/friends/${username}/`, 'DELETE', null, true);
-    if (res.ok) { await fetchFriends(); renderManageFriendsList(document.getElementById('filter-friends-input').value); }
-    else { alert("Failed to remove friend."); }
-};
+window.handleAddFriend = async (e) => { e.preventDefault(); const input = document.getElementById('add-friend-input'); const username = input.value.trim(); if (!username) return; const res = await API.request('/api/users/friends/', 'POST', { username }, true); if (res.ok) { if (res.data.status === 'Already friends') { alert("You are already allies."); } else { input.value = ''; await fetchFriends(); renderManageFriendsList(); } } else { alert(res.data.detail || "Failed to add friend. Check spelling."); } };
+window.handleRemoveFriend = async (username) => { if (!confirm(`Sever alliance with @${username}?`)) return; const res = await API.request(`/api/users/friends/${username}/`, 'DELETE', null, true); if (res.ok) { await fetchFriends(); renderManageFriendsList(document.getElementById('filter-friends-input').value); } else { alert("Failed to remove friend."); } };
 
 function setAvatar() {
     const user = localStorage.getItem('username') || "U";
