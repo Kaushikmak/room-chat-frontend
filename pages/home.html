@@ -101,6 +101,24 @@
             z-index: 2000;
             display: flex; align-items: center; justify-content: center;
         }
+
+        /* FRIEND MANAGEMENT STYLES */
+        .friend-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+        .friend-row button {
+            background: var(--error-color);
+            color: white;
+            border: 2px solid black;
+            padding: 2px 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
     </style>
 </head>
 <body>
@@ -160,7 +178,12 @@
 
         <aside class="neo-box scroll-column">
             <h3 style="border-bottom: 3px solid black; padding-bottom: 10px; margin-top: 0;">DATA STREAM</h3>
-            <h4>FRIENDS</h4>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h4 style="margin: 0;">FRIENDS</h4>
+                <button class="mini-btn" style="width: auto; padding: 2px 8px;" onclick="window.openManageFriends()">MANAGE (+)</button>
+            </div>
+
             <div id="friends-list"></div>
             <hr style="border: 2px solid black; margin: 20px 0;">
             <h4>ACTIVITY</h4>
@@ -190,6 +213,30 @@
                     <button type="submit" class="neo-btn" style="background: var(--success-color); flex: 1;">CREATE</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div id="friends-modal" class="modal-overlay hidden">
+        <div class="neo-box" style="width: 350px; background: var(--bg-color); max-height: 80vh; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">MANAGE ALLIES</h3>
+                <button onclick="window.closeFriendsModal()" style="border: none; background: none; font-weight: 900; font-size: 1.2rem; cursor: pointer;">X</button>
+            </div>
+
+            <form onsubmit="window.handleAddFriend(event)" style="border-bottom: 3px solid black; padding-bottom: 15px; margin-bottom: 15px;">
+                <label style="font-weight: 800; font-size: 0.8rem;">ADD BY CODENAME</label>
+                <div style="display: flex; gap: 5px; margin-top: 5px;">
+                    <input type="text" id="add-friend-input" placeholder="Exact username..." required>
+                    <button type="submit" class="neo-btn" style="background: var(--success-color); padding: 5px 10px;">ADD</button>
+                </div>
+            </form>
+
+            <div style="margin-bottom: 10px;">
+                <input type="text" id="filter-friends-input" placeholder="Search my list..." onkeyup="window.filterFriends(event)" style="padding: 8px;">
+            </div>
+
+            <div id="manage-friends-list" style="overflow-y: auto; flex: 1; border: 2px solid black; background: white; min-height: 150px;">
+                </div>
         </div>
     </div>
 

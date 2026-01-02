@@ -3,7 +3,7 @@ import { API } from '../assets/js/api.js';
 let currentRoomId = null;
 let allRooms = [];
 let allTopics = [];
-let allFriends = [];
+let allFriends = []; 
 let expandedTopics = new Set(); // Tracks which topics are open
 
 // --- UI & THEME ---
@@ -55,9 +55,12 @@ async function fetchFriends() {
     const res = await API.request('/api/users/friends/', 'GET', null, true);
     if (res.ok) {
         allFriends = res.data;
+        // Sidebar list
         document.getElementById('friends-list').innerHTML = allFriends.map(f => 
             `<div class="list-item" onclick="window.openDm('${f.friend.username}')">@${f.friend.username}</div>`
         ).join('');
+        // Also refresh DM tab list if needed
+        renderDmList();
     }
 }
 
@@ -65,6 +68,80 @@ async function fetchActivity() {
     const res = await API.request('/api/activity/');
     if (res.ok) document.getElementById('activity-feed').innerHTML = res.data.map(a => `<div class="list-item">${a.body}</div>`).join('');
 }
+
+// --- FRIEND MANAGEMENT LOGIC ---
+
+window.openManageFriends = () => {
+    document.getElementById('friends-modal').classList.remove('hidden');
+    // Clear inputs
+    document.getElementById('add-friend-input').value = '';
+    document.getElementById('filter-friends-input').value = '';
+    // Render full list
+    renderManageFriendsList();
+};
+
+window.closeFriendsModal = () => {
+    document.getElementById('friends-modal').classList.add('hidden');
+};
+
+window.renderManageFriendsList = (filterText = "") => {
+    const container = document.getElementById('manage-friends-list');
+    const cleanFilter = filterText.toLowerCase();
+
+    const filtered = allFriends.filter(f => 
+        f.friend.username.toLowerCase().includes(cleanFilter)
+    );
+
+    if (filtered.length === 0) {
+        container.innerHTML = '<div style="padding:15px; text-align:center; opacity:0.6;">No allies found.</div>';
+        return;
+    }
+
+    container.innerHTML = filtered.map(f => `
+        <div class="friend-row">
+            <span style="font-weight:600;">@${f.friend.username}</span>
+            <button onclick="window.handleRemoveFriend('${f.friend.username}')">REMOVE</button>
+        </div>
+    `).join('');
+};
+
+window.filterFriends = (e) => {
+    renderManageFriendsList(e.target.value);
+};
+
+window.handleAddFriend = async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('add-friend-input');
+    const username = input.value.trim();
+    if (!username) return;
+
+    const res = await API.request('/api/users/friends/', 'POST', { username }, true);
+    if (res.ok) {
+        if (res.data.status === 'Already friends') {
+             alert("You are already allies.");
+        } else {
+             input.value = '';
+             await fetchFriends(); // Refresh global data & sidebar
+             renderManageFriendsList(); // Refresh modal UI
+        }
+    } else {
+        alert(res.data.detail || "Failed to add friend. Check spelling.");
+    }
+};
+
+window.handleRemoveFriend = async (username) => {
+    if (!confirm(`Sever alliance with @${username}?`)) return;
+
+    const res = await API.request(`/api/users/friends/${username}/`, 'DELETE', null, true);
+    if (res.ok) {
+        await fetchFriends(); // Refresh global data
+        // Re-render modal list preserving current filter
+        renderManageFriendsList(document.getElementById('filter-friends-input').value); 
+    } else {
+        alert("Failed to remove friend.");
+    }
+};
+
 
 // --- RENDER LOGIC (OPTION A) ---
 window.renderPublicList = (filterText = "") => {
@@ -173,7 +250,6 @@ window.submitCreate = async (e) => {
             renderPublicList();
             window.closeModal();
         } else {
-            // FIX: Show specific error message from server
             const errorMsg = res.data && res.data.detail ? res.data.detail : 'Failed to create topic';
             alert(errorMsg);
         }
@@ -182,19 +258,17 @@ window.submitCreate = async (e) => {
         const res = await API.request('/api/rooms/', 'POST', { name, topic_id: topicId }, true);
         if (res.ok) {
             await fetchRooms();
-            // Auto expand the topic we just added to
             expandedTopics.add(parseInt(topicId));
             renderPublicList();
             window.closeModal();
         } else {
-            // FIX: Show specific error message from server for rooms as well
             const errorMsg = res.data && res.data.detail ? res.data.detail : 'Failed to create room';
             alert(errorMsg);
         }
     }
 };
 
-// --- DM & CHAT LOGIC (Preserved) ---
+// --- DM & CHAT LOGIC ---
 window.renderDmList = () => {
     const container = document.getElementById('dm-rooms-list');
     if (allFriends.length === 0) {
