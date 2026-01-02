@@ -56,7 +56,9 @@
     width: 100%;
     max-width: 1600px;
     height: calc(100vh - var(--nav-height) - 40px); /* Full height minus nav and padding */
-    margin: 0 auto;
+    
+    /* CHANGE: Update margin to push grid below fixed navbar */
+    margin: calc(var(--nav-height) + 20px) auto 0; 
 }
 
 /* RESPONSIVE BREAKPOINTS */
