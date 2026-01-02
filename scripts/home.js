@@ -179,7 +179,7 @@ window.submitCreate = async (e) => {
         }
     } else {
         const topicId = document.getElementById('create-topic-select').value;
-        const res = await API.request('/api/rooms/', 'POST', { name, topic: topicId }, true);
+        const res = await API.request('/api/rooms/', 'POST', { name, topic_id: topicId }, true);
         if (res.ok) {
             await fetchRooms();
             // Auto expand the topic we just added to
