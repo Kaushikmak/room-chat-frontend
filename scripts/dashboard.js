@@ -136,17 +136,29 @@ function renderHistory() {
 // Helper: Time Ago
 function timeAgo(date) {
     const seconds = Math.floor((new Date() - date) / 1000);
+    
+    // Handle clock skew (if client time is slightly behind server)
+    if (seconds < 5) return "Just now";
+
     let interval = seconds / 31536000;
-    if (interval > 1) return Math.floor(interval) + " years ago";
+    if (interval > 1) return Math.floor(interval) + " months ago"; // Approximation for > 1 year usually falls to months/years logic
+    
     interval = seconds / 2592000;
     if (interval > 1) return Math.floor(interval) + " months ago";
+    
+    interval = seconds / 604800;
+    if (interval > 1) return Math.floor(interval) + " weeks ago";
+    
     interval = seconds / 86400;
     if (interval > 1) return Math.floor(interval) + " days ago";
+    
     interval = seconds / 3600;
-    if (interval > 1) return Math.floor(interval) + "h ago";
+    if (interval > 1) return Math.floor(interval) + " hrs ago";
+    
     interval = seconds / 60;
-    if (interval > 1) return Math.floor(interval) + "m ago";
-    return "Just now";
+    if (interval > 1) return Math.floor(interval) + " mins ago";
+    
+    return Math.floor(seconds) + " secs ago";
 }
 
 init();
