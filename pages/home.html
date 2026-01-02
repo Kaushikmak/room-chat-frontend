@@ -66,36 +66,63 @@
 
         /* ACCORDION STYLES */
         .topic-header {
-    padding: 12px;
-    border-bottom: 2px solid black;
-    background: var(--box-bg); /* CHANGED from white */
-    color: var(--box-text);    /* ADDED */
-    font-weight: 800;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.topic-header:hover { background: var(--secondary-accent); color: black; } /* Hover stays punchy */
+            padding: 12px;
+            border-bottom: 2px solid black;
+            background: var(--box-bg);
+            color: var(--box-text);
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .topic-header:hover { background: var(--secondary-accent); color: black; }
         
         .room-sublist {
             background: rgba(0,0,0,0.05);
-            display: none; /* Hidden by default */
+            display: none; 
             border-bottom: 2px solid black;
         }
         .room-sublist.expanded { display: block; }
         
         .room-item {
-    padding: 10px 10px 10px 25px; 
-    font-size: 0.9rem;
-    cursor: pointer;
-    border-bottom: 1px solid var(--box-text); /* CHANGED from rgba(0,0,0,0.1) for visibility */
-    opacity: 0.7; /* Added opacity for hierarchy */
-    font-weight: 600;
-    color: var(--box-text); /* ADDED */
-}
-.room-item:hover { background: var(--main-accent); color: white; opacity: 1; }
+            padding: 10px 10px 10px 25px; 
+            font-size: 0.9rem;
+            cursor: pointer;
+            border-bottom: 1px solid var(--box-text);
+            opacity: 0.8;
+            font-weight: 600;
+            color: var(--box-text);
+            /* NEW: Layout for actions */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .room-item:hover { background: var(--main-accent); color: white; opacity: 1; }
         .room-item:last-child { border-bottom: none; }
+
+        /* NEW: Room Actions (Edit/Delete Buttons) */
+        .room-actions {
+            display: none; /* Hidden by default */
+            gap: 5px;
+        }
+        .room-item:hover .room-actions {
+            display: flex; /* Show on hover */
+        }
+        .room-actions button {
+            background: white;
+            border: 1px solid black;
+            color: black;
+            font-size: 0.8rem;
+            cursor: pointer;
+            padding: 0 4px;
+            font-weight: bold;
+            border-radius: 2px;
+        }
+        .room-actions button:hover {
+            transform: scale(1.1);
+            background: #eee;
+        }
 
         /* MODAL */
         .modal-overlay {
@@ -122,89 +149,92 @@
             cursor: pointer;
             font-size: 0.7rem;
         }
+
         /* DROPDOWN STYLES */
-.search-dropdown {
-    position: absolute;
-    width: 100%;
-    background: var(--box-bg);
-    border: 2px solid black;
-    border-top: none;
-    max-height: 150px;
-    overflow-y: auto;
-    z-index: 10;
-    box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
-}
+        .search-dropdown {
+            position: absolute;
+            width: 100%;
+            background: var(--box-bg);
+            border: 2px solid black;
+            border-top: none;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 10;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+        }
 
-.dropdown-item {
-    padding: 10px;
-    cursor: pointer;
-    font-weight: bold;
-    border-bottom: 1px solid var(--box-text);
-    color: var(--box-text);
-    display: flex;
-    justify-content: space-between;
-}
+        .dropdown-item {
+            padding: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            border-bottom: 1px solid var(--box-text);
+            color: var(--box-text);
+            display: flex;
+            justify-content: space-between;
+        }
 
-.dropdown-item:hover {
-    background: var(--main-accent);
-    color: white;
-}
+        .dropdown-item:hover {
+            background: var(--main-accent);
+            color: white;
+        }
 
-.dropdown-item .match-tag {
-    font-size: 0.7rem;
-    background: black;
-    color: white;
-    padding: 2px 5px;
-    border-radius: 4px;
-}
+        .dropdown-item .match-tag {
+            font-size: 0.7rem;
+            background: black;
+            color: white;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
 
-/* ACTIVITY FEED STYLES */
-.activity-item {
-    padding: 12px;
-    border-bottom: 2px solid black;
-    background: var(--box-bg); /* CHANGED from white */
-    color: var(--box-text);    /* ADDED */
-    font-size: 0.85rem;
-    line-height: 1.4;
-    transition: background 0.2s;
-}
-.activity-item:hover {
-    background: rgba(0,0,0,0.02);
-}
+        /* ACTIVITY FEED STYLES */
+        .activity-item {
+            padding: 12px;
+            border-bottom: 2px solid black;
+            background: var(--box-bg);
+            color: var(--box-text);
+            font-size: 0.85rem;
+            line-height: 1.4;
+            transition: background 0.2s;
+        }
+        .activity-item:hover {
+            background: rgba(0,0,0,0.02);
+        }
 
-.act-user {
-    color: var(--main-accent); /* Violet/Accent Color */
-    font-weight: 900;
-    text-transform: uppercase;
-}
+        .act-user {
+            color: var(--main-accent);
+            font-weight: 900;
+            text-transform: uppercase;
+        }
 
-.act-context {
-    font-weight: 700;
-    color: var(--box-text);
-}
+        .act-context {
+            font-weight: 700;
+            color: var(--box-text);
+        }
 
-.act-time {
-    color: #888; /* Light Grey */
-    font-size: 0.75rem;
-    font-weight: 600;
-    margin-left: 5px;
-}
+        .act-time {
+            color: #888;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 5px;
+        }
 
-.act-body {
-    margin-top: 5px;
-    font-style: italic;
-    opacity: 0.8;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    border-left: 3px solid var(--secondary-accent);
-    padding-left: 8px;
-}
+        .act-body {
+            margin-top: 5px;
+            font-style: italic;
+            opacity: 0.8;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border-left: 3px solid var(--secondary-accent);
+            padding-left: 8px;
+        }
     </style>
 </head>
 <body>
     <nav class="navbar">
-        <div class="brand" onclick="window.location.href='home.html'">ROOM CHAT</div>
+        <div class="brand" onclick="window.location.href='home.html'" style="padding: 0; border: none; background: transparent;">
+            <img src="../assets/images/logo.svg" alt="ROOM CHAT" style="height: 100%; max-height: 65px; overflow: visible;">
+        </div>
         <div class="nav-controls">
             <button class="neo-btn" style="padding: 5px 10px;" onclick="window.toggleTheme()">
                 <span id="theme-icon">☀️</span>
@@ -305,18 +335,15 @@
             </div>
 
             <form onsubmit="window.handleAddFriend(event)" style="border-bottom: 3px solid black; padding-bottom: 15px; margin-bottom: 15px; position: relative;">
-    <label style="font-weight: 800; font-size: 0.8rem;">ADD BY CODENAME</label>
-    
-    <div style="display: flex; gap: 5px; margin-top: 5px;">
-        <div style="position: relative; flex-grow: 1;">
-            <input type="text" id="add-friend-input" placeholder="Type to search..." required autocomplete="off" onkeyup="window.handleUserSearch(event)">
-            
-            <div id="search-dropdown-container" class="search-dropdown hidden"></div>
-        </div>
-        
-        <button type="submit" class="neo-btn" style="background: var(--success-color); padding: 5px 10px;">ADD</button>
-    </div>
-</form>
+                <label style="font-weight: 800; font-size: 0.8rem;">ADD BY CODENAME</label>
+                <div style="display: flex; gap: 5px; margin-top: 5px;">
+                    <div style="position: relative; flex-grow: 1;">
+                        <input type="text" id="add-friend-input" placeholder="Type to search..." required autocomplete="off" onkeyup="window.handleUserSearch(event)">
+                        <div id="search-dropdown-container" class="search-dropdown hidden"></div>
+                    </div>
+                    <button type="submit" class="neo-btn" style="background: var(--success-color); padding: 5px 10px;">ADD</button>
+                </div>
+            </form>
 
             <div style="margin-bottom: 10px;">
                 <input type="text" id="filter-friends-input" placeholder="Search my list..." onkeyup="window.filterFriends(event)" style="padding: 8px;">

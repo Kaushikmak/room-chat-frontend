@@ -4,7 +4,7 @@ let currentRoomId = null;
 let allRooms = [];
 let allTopics = [];
 let allFriends = []; 
-let expandedTopics = new Set(); // Tracks which topics are open
+let expandedTopics = new Set(); 
 
 // --- UI & THEME ---
 window.toggleTheme = () => {
@@ -26,14 +26,12 @@ window.showTab = (type) => {
 async function init() {
     if (!API.isAuthenticated()) window.location.href = 'login.html';
     
-    // FIX: Sync identity with server to ensure "me" is correct
+    // Ensure we know who the user is for permission checks
     await verifyUserIdentity();
 
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
     document.getElementById('theme-icon').textContent = savedTheme === 'dark' ? '🌙' : '☀️';
-    
-    // No need to call setAvatar() here, verifyUserIdentity does it
     
     // Fetch Data
     await Promise.all([fetchTopics(), fetchRooms(), fetchFriends(), fetchActivity()]);
@@ -47,7 +45,7 @@ async function verifyUserIdentity() {
     const res = await API.request('/api/users/profile/', 'GET', null, true);
     if (res.ok) {
         localStorage.setItem('username', res.data.username);
-        setAvatar(); // Update avatar now that we are sure of the name
+        setAvatar();
     }
 }
 
@@ -66,11 +64,9 @@ async function fetchFriends() {
     const res = await API.request('/api/users/friends/', 'GET', null, true);
     if (res.ok) {
         allFriends = res.data;
-        // Sidebar list
         document.getElementById('friends-list').innerHTML = allFriends.map(f => 
             `<div class="list-item" onclick="window.openDm('${f.friend.username}')">@${f.friend.username}</div>`
         ).join('');
-        // Also refresh DM tab list if needed
         renderDmList();
     }
 }
@@ -79,20 +75,14 @@ async function fetchActivity() {
     const res = await API.request('/api/activity/');
     if (res.ok) {
         const container = document.getElementById('activity-feed');
-        
         if (res.data.length === 0) {
             container.innerHTML = '<div style="padding:15px; opacity:0.6;">Silence on the airwaves...</div>';
             return;
         }
-
         container.innerHTML = res.data.map(a => {
-            // Format Time (e.g., 12:30 pm)
             const date = new Date(a.created);
             const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase();
-            
-            // Format Context: "Topic/Room" or just "Room"
             const context = a.topic ? `${a.topic}/${a.room}` : a.room;
-
             return `
             <div class="activity-item">
                 <div>
@@ -102,113 +92,49 @@ async function fetchActivity() {
                     <span class="act-time">${time}</span>
                 </div>
                 <div class="act-body">"${a.body}"</div>
-            </div>
-            `;
+            </div>`;
         }).join('');
     }
 }
 
-// --- FRIEND MANAGEMENT LOGIC ---
-
-window.openManageFriends = () => {
-    document.getElementById('friends-modal').classList.remove('hidden');
-    // Clear inputs
-    document.getElementById('add-friend-input').value = '';
-    document.getElementById('filter-friends-input').value = '';
-    // Render full list
-    renderManageFriendsList();
-};
-
-window.closeFriendsModal = () => {
-    document.getElementById('friends-modal').classList.add('hidden');
-};
-
-window.renderManageFriendsList = (filterText = "") => {
-    const container = document.getElementById('manage-friends-list');
-    const cleanFilter = filterText.toLowerCase();
-
-    const filtered = allFriends.filter(f => 
-        f.friend.username.toLowerCase().includes(cleanFilter)
-    );
-
-    if (filtered.length === 0) {
-        container.innerHTML = '<div style="padding:15px; text-align:center; opacity:0.6;">No allies found.</div>';
-        return;
-    }
-
-    container.innerHTML = filtered.map(f => `
-        <div class="friend-row">
-            <span style="font-weight:600;">@${f.friend.username}</span>
-            <button onclick="window.handleRemoveFriend('${f.friend.username}')">REMOVE</button>
-        </div>
-    `).join('');
-};
-
-window.filterFriends = (e) => {
-    renderManageFriendsList(e.target.value);
-};
-
-window.handleAddFriend = async (e) => {
-    e.preventDefault();
-    const input = document.getElementById('add-friend-input');
-    const username = input.value.trim();
-    if (!username) return;
-
-    const res = await API.request('/api/users/friends/', 'POST', { username }, true);
-    if (res.ok) {
-        if (res.data.status === 'Already friends') {
-             alert("You are already allies.");
-        } else {
-             input.value = '';
-             await fetchFriends(); // Refresh global data & sidebar
-             renderManageFriendsList(); // Refresh modal UI
-        }
-    } else {
-        alert(res.data.detail || "Failed to add friend. Check spelling.");
-    }
-};
-
-window.handleRemoveFriend = async (username) => {
-    if (!confirm(`Sever alliance with @${username}?`)) return;
-
-    const res = await API.request(`/api/users/friends/${username}/`, 'DELETE', null, true);
-    if (res.ok) {
-        await fetchFriends(); // Refresh global data
-        // Re-render modal list preserving current filter
-        renderManageFriendsList(document.getElementById('filter-friends-input').value); 
-    } else {
-        alert("Failed to remove friend.");
-    }
-};
-
-
-// --- RENDER LOGIC (OPTION A) ---
+// --- RENDER LOGIC ---
 window.renderPublicList = (filterText = "") => {
     const container = document.getElementById('public-list-container');
     container.innerHTML = "";
-
     const cleanFilter = filterText.toLowerCase();
+    const myUsername = localStorage.getItem('username');
+
+    // Helper: Generate HTML for a room item with conditional buttons
+    const getRoomHtml = (r) => {
+        const isOwner = r.host && r.host.username === myUsername;
+        // If owner, show Edit (pencil) and Delete (x) buttons
+        const actions = isOwner ? `
+            <span class="room-actions">
+                <button onclick="window.editRoom('${r.id}', '${r.name}', event)" title="Edit">✎</button>
+                <button onclick="window.deleteRoom('${r.id}', event)" title="Delete" style="color:var(--error-color)">×</button>
+            </span>` : '';
+
+        return `
+            <div class="room-item" onclick="window.loadRoom('${r.id}')">
+                <span>${r.name}</span>
+                ${actions}
+            </div>`;
+    };
 
     // Filter Topics
     const visibleTopics = allTopics.filter(t => t.name.toLowerCase().includes(cleanFilter));
 
     visibleTopics.forEach(topic => {
         // Find rooms for this topic
-        // Matching Logic: Checks if room.topic.id == topic.id OR room.topic == topic.id
         const topicRooms = allRooms.filter(r => {
-            if (r.is_direct_message) return false; // Hide DMs from Public tab
-            
-            // Search Filter for Rooms
-            if (cleanFilter && !r.name.toLowerCase().includes(cleanFilter) && !topic.name.toLowerCase().includes(cleanFilter)) {
-                return false; 
-            }
-
-            // Relationship Match
+            if (r.is_direct_message) return false;
+            // Search filter
+            if (cleanFilter && !r.name.toLowerCase().includes(cleanFilter) && !topic.name.toLowerCase().includes(cleanFilter)) return false;
+            // Match Topic ID
             if (typeof r.topic === 'object' && r.topic !== null) return r.topic.id === topic.id;
             return r.topic === topic.id;
         });
 
-        // If filtering, expand all. Otherwise respect user toggle.
         const isExpanded = expandedTopics.has(topic.id) || cleanFilter.length > 0;
         const arrow = isExpanded ? '▼' : '▶';
 
@@ -219,77 +145,62 @@ window.renderPublicList = (filterText = "") => {
                     <span>${arrow}</span>
                 </div>
                 <div class="room-sublist ${isExpanded ? 'expanded' : ''}" id="topic-rooms-${topic.id}">
-                    ${topicRooms.length ? topicRooms.map(r => `
-                        <div class="room-item" onclick="window.loadRoom('${r.id}')">
-                            ${r.name}
-                        </div>
-                    `).join('') : '<div class="room-item" style="font-style:italic; opacity:0.6;">No channels</div>'}
+                    ${topicRooms.length ? topicRooms.map(getRoomHtml).join('') : '<div class="room-item" style="font-style:italic; opacity:0.6;">No channels</div>'}
                 </div>
             </div>
         `;
         container.innerHTML += html;
     });
 
-    // Handle "Uncategorized" Rooms (Optional, if any exist without topic)
+    // Handle "Other" Rooms (Uncategorized)
     const uncategorized = allRooms.filter(r => !r.is_direct_message && !r.topic);
     if (uncategorized.length > 0) {
-        container.innerHTML += `<div class="topic-header" style="background: #eee;">OTHER</div>`;
+        // Removed inline style so it respects dark mode theme
+        container.innerHTML += `<div class="topic-header">OTHER / GENERAL</div>`;
         uncategorized.forEach(r => {
-            container.innerHTML += `<div class="room-item" onclick="window.loadRoom('${r.id}')">${r.name}</div>`;
+            container.innerHTML += getRoomHtml(r);
         });
     }
 };
 
-let searchTimeout = null;
-
-window.handleUserSearch = (e) => {
-    const query = e.target.value.trim();
-    const dropdown = document.getElementById('search-dropdown-container');
+// --- ROOM ACTIONS (NEW) ---
+window.deleteRoom = async (id, e) => {
+    e.stopPropagation(); // Stop bubbling (don't open the room)
+    if (!confirm("Are you sure you want to delete this room?")) return;
     
-    // Clear previous timeout (Debouncing)
-    if (searchTimeout) clearTimeout(searchTimeout);
-
-    if (query.length < 2) {
-        dropdown.classList.add('hidden');
-        return;
-    }
-
-    // Wait 300ms before hitting API to save requests
-    searchTimeout = setTimeout(async () => {
-        const res = await API.request(`/api/users/search/?q=${query}`, 'GET', null, true);
-        
-        if (res.ok && res.data.length > 0) {
-            dropdown.innerHTML = res.data.map(user => `
-                <div class="dropdown-item" onclick="window.selectSearchUser('${user.username}')">
-                    <span>${user.username}</span>
-                    ${user.username.toLowerCase().includes(query.toLowerCase()) ? '' : '<span class="match-tag">PHONETIC</span>'}
-                </div>
-            `).join('');
-            dropdown.classList.remove('hidden');
-        } else {
-            dropdown.innerHTML = `<div style="padding:10px; opacity:0.6; font-style:italic;">No agents found.</div>`;
-            dropdown.classList.remove('hidden');
+    const res = await API.request(`/api/rooms/${id}/`, 'DELETE', null, true);
+    if (res.ok) {
+        await fetchRooms();
+        renderPublicList();
+        // If we deleted the currently active room, reset the view
+        if (currentRoomId == id) {
+            document.getElementById('active-room-name').textContent = "READY...";
+            document.getElementById('messages-container').innerHTML = '<div style="text-align: center; margin-top: 50px; opacity: 0.5;">SELECT A TERMINAL</div>';
+            document.getElementById('chat-form').classList.add('hidden');
+            currentRoomId = null;
         }
-    }, 300);
-};
-
-window.selectSearchUser = (username) => {
-    // Populate input
-    document.getElementById('add-friend-input').value = username;
-    // Hide dropdown
-    document.getElementById('search-dropdown-container').classList.add('hidden');
-    // Optional: Auto-submit
-    // window.handleAddFriend(new Event('submit')); 
-};
-
-// Close dropdown if clicking outside
-document.addEventListener('click', (e) => {
-    const container = document.getElementById('search-dropdown-container');
-    const input = document.getElementById('add-friend-input');
-    if (e.target !== container && e.target !== input) {
-        container.classList.add('hidden');
+    } else {
+        alert("Failed to delete room.");
     }
-});
+};
+
+window.editRoom = async (id, oldName, e) => {
+    e.stopPropagation(); // Stop bubbling
+    const newName = prompt("Rename Room:", oldName);
+    if (newName && newName !== oldName) {
+        const res = await API.request(`/api/rooms/${id}/`, 'PUT', { name: newName }, true);
+        if (res.ok) {
+            await fetchRooms();
+            renderPublicList();
+            // Update header if we are currently in this room
+            if (currentRoomId == id) {
+                document.getElementById('active-room-name').textContent = newName;
+            }
+        } else {
+            alert("Failed to update room.");
+        }
+    }
+};
 
 window.toggleTopic = (id) => {
     if (expandedTopics.has(id)) expandedTopics.delete(id);
@@ -319,8 +230,9 @@ window.openCreateModal = (type) => {
     } else {
         title.textContent = "CREATE ROOM";
         topicGroup.classList.remove('hidden');
-        // Populate Topic Select
-        select.innerHTML = allTopics.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+        // Populate Topic Select with "Other" option
+        select.innerHTML = `<option value="">-- Other / General --</option>` + 
+            allTopics.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
     }
 };
 
@@ -344,11 +256,14 @@ window.submitCreate = async (e) => {
             alert(errorMsg);
         }
     } else {
-        const topicId = document.getElementById('create-topic-select').value;
+        // Handle "Other" selection (empty string -> null)
+        let topicId = document.getElementById('create-topic-select').value;
+        if (topicId === "") topicId = null;
+
         const res = await API.request('/api/rooms/', 'POST', { name, topic_id: topicId }, true);
         if (res.ok) {
             await fetchRooms();
-            expandedTopics.add(parseInt(topicId));
+            if (topicId) expandedTopics.add(parseInt(topicId));
             renderPublicList();
             window.closeModal();
         } else {
@@ -358,7 +273,7 @@ window.submitCreate = async (e) => {
     }
 };
 
-// --- DM & CHAT LOGIC ---
+// --- DM & FRIENDS LOGIC ---
 window.renderDmList = () => {
     const container = document.getElementById('dm-rooms-list');
     if (allFriends.length === 0) {
@@ -380,25 +295,18 @@ window.renderDmList = () => {
 };
 
 window.openDm = async (username) => {
-    // We use the specific 'chat/start/' endpoint which handles "Find or Create" logic on the backend
     const res = await API.request('/api/chat/start/', 'POST', { username: username }, true);
-    
     if (res.ok) {
-        const room = res.data;
-        
-        // Load the room we received (which contains the ID of the existing history)
-        await window.loadRoom(room.id);
-        
-        // Optional: Override the header to show just the friend's name instead of "DM: user & friend"
+        await window.loadRoom(res.data.id);
         const headerName = document.getElementById('active-room-name');
         if(headerName) headerName.textContent = "@" + username.toUpperCase();
-        
     } else {
         console.error("Failed to open DM", res);
         alert("Could not open transmission line.");
     }
 };
 
+// --- CHAT LOGIC ---
 window.loadRoom = async (id) => {
     currentRoomId = id;
     const res = await API.request(`/api/rooms/${id}/`);
@@ -412,33 +320,22 @@ window.loadRoom = async (id) => {
         window.pollInterval = setInterval(() => fetchMessages(id), 5000);
     }
 };
+
 function addToHistory(room) {
-    if (room.is_direct_message) return; // Don't track DMs in "Pages"
-    
+    if (room.is_direct_message) return;
     let history = JSON.parse(localStorage.getItem('room_history') || '[]');
-    
-    // Remove duplicates
     history = history.filter(r => r.id !== room.id);
-    
-    // Add to top
     history.unshift({ id: room.id, name: room.name, topic: room.topic?.name || 'General', time: new Date() });
-    
-    // Keep last 5
     if (history.length > 5) history.pop();
-    
     localStorage.setItem('room_history', JSON.stringify(history));
 }
 
 async function fetchMessages(id) {
     const res = await API.request(`/api/rooms/${id}/messages/`);
-    // Get latest username from storage
     const me = localStorage.getItem('username'); 
-    
     if (res.ok) {
         document.getElementById('messages-container').innerHTML = res.data.map(m => {
-            // FIX: Case-insensitive comparison for robustness
             const isMine = m.user.username.toLowerCase() === (me ? me.toLowerCase() : '');
-            
             return `
                 <div class="message-row ${isMine ? 'mine' : 'theirs'}">
                     <div class="message-bubble ${isMine ? 'mine' : 'theirs'}">
@@ -457,6 +354,88 @@ window.sendMessage = async (e) => {
     if (!input.value || !currentRoomId) return;
     const res = await API.request(`/api/rooms/${currentRoomId}/messages/`, 'POST', { body: input.value }, true);
     if (res.ok) { input.value = ''; await fetchMessages(currentRoomId); }
+};
+
+// --- USER SEARCH ---
+let searchTimeout = null;
+window.handleUserSearch = (e) => {
+    const query = e.target.value.trim();
+    const dropdown = document.getElementById('search-dropdown-container');
+    if (searchTimeout) clearTimeout(searchTimeout);
+    if (query.length < 2) { dropdown.classList.add('hidden'); return; }
+    searchTimeout = setTimeout(async () => {
+        const res = await API.request(`/api/users/search/?q=${query}`, 'GET', null, true);
+        if (res.ok && res.data.length > 0) {
+            dropdown.innerHTML = res.data.map(user => `
+                <div class="dropdown-item" onclick="window.selectSearchUser('${user.username}')">
+                    <span>${user.username}</span>
+                    ${user.username.toLowerCase().includes(query.toLowerCase()) ? '' : '<span class="match-tag">PHONETIC</span>'}
+                </div>`).join('');
+            dropdown.classList.remove('hidden');
+        } else {
+            dropdown.innerHTML = `<div style="padding:10px; opacity:0.6; font-style:italic;">No agents found.</div>`;
+            dropdown.classList.remove('hidden');
+        }
+    }, 300);
+};
+
+window.selectSearchUser = (username) => {
+    document.getElementById('add-friend-input').value = username;
+    document.getElementById('search-dropdown-container').classList.add('hidden');
+};
+
+document.addEventListener('click', (e) => {
+    const container = document.getElementById('search-dropdown-container');
+    const input = document.getElementById('add-friend-input');
+    if (e.target !== container && e.target !== input) container.classList.add('hidden');
+});
+
+// --- FRIEND MANAGEMENT ---
+window.openManageFriends = () => {
+    document.getElementById('friends-modal').classList.remove('hidden');
+    document.getElementById('add-friend-input').value = '';
+    document.getElementById('filter-friends-input').value = '';
+    renderManageFriendsList();
+};
+
+window.closeFriendsModal = () => {
+    document.getElementById('friends-modal').classList.add('hidden');
+};
+
+window.renderManageFriendsList = (filterText = "") => {
+    const container = document.getElementById('manage-friends-list');
+    const cleanFilter = filterText.toLowerCase();
+    const filtered = allFriends.filter(f => f.friend.username.toLowerCase().includes(cleanFilter));
+    if (filtered.length === 0) {
+        container.innerHTML = '<div style="padding:15px; text-align:center; opacity:0.6;">No allies found.</div>';
+        return;
+    }
+    container.innerHTML = filtered.map(f => `
+        <div class="friend-row">
+            <span style="font-weight:600;">@${f.friend.username}</span>
+            <button onclick="window.handleRemoveFriend('${f.friend.username}')">REMOVE</button>
+        </div>`).join('');
+};
+
+window.filterFriends = (e) => { renderManageFriendsList(e.target.value); };
+
+window.handleAddFriend = async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('add-friend-input');
+    const username = input.value.trim();
+    if (!username) return;
+    const res = await API.request('/api/users/friends/', 'POST', { username }, true);
+    if (res.ok) {
+        if (res.data.status === 'Already friends') { alert("You are already allies."); }
+        else { input.value = ''; await fetchFriends(); renderManageFriendsList(); }
+    } else { alert(res.data.detail || "Failed to add friend. Check spelling."); }
+};
+
+window.handleRemoveFriend = async (username) => {
+    if (!confirm(`Sever alliance with @${username}?`)) return;
+    const res = await API.request(`/api/users/friends/${username}/`, 'DELETE', null, true);
+    if (res.ok) { await fetchFriends(); renderManageFriendsList(document.getElementById('filter-friends-input').value); }
+    else { alert("Failed to remove friend."); }
 };
 
 function setAvatar() {
