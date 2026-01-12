@@ -1,3 +1,3 @@
 export const CONFIG = {
-    API_BASE_URL: "https://room-chat-api-eudf.onrender.com"
+    API_BASE_URL: "https://xfn8hgh7pt.ap-south-1.awsapprunner.com"
 };
