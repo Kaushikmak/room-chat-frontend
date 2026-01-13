@@ -1,5 +1,8 @@
 // room-chat-frontend/sw.js
-const CACHE_NAME = 'room-chat-v1';
+
+// CHANGE THIS VERSION to force the browser to update (v1 -> v2)
+const CACHE_NAME = 'room-chat-v2';
+
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -17,8 +20,9 @@ const ASSETS_TO_CACHE = [
     '/scripts/dashboard.js'
 ];
 
-// 1. Install Phase: Cache static assets
+// 1. Install: Cache files
 self.addEventListener('install', (e) => {
+    self.skipWaiting(); // Force new worker to take over immediately
     e.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(ASSETS_TO_CACHE);
@@ -26,7 +30,7 @@ self.addEventListener('install', (e) => {
     );
 });
 
-// 2. Activate Phase: Clean up old caches
+// 2. Activate: Delete old caches
 self.addEventListener('activate', (e) => {
     e.waitUntil(
         caches.keys().then((keyList) => {
@@ -35,23 +39,26 @@ self.addEventListener('activate', (e) => {
             }));
         })
     );
+    self.clients.claim(); // Take control of all pages immediately
 });
 
-// 3. Fetch Phase: Serve from cache, then fall back to network
+// 3. Fetch: Stale-While-Revalidate Strategy (Best for speed + updates)
 self.addEventListener('fetch', (e) => {
-    // Only cache GET requests, ignore API calls (handled by JS)
-    if (e.request.method !== 'GET' || e.request.url.includes('/api/')) return;
+    // Ignore API calls (let them go to network)
+    if (e.request.url.includes('/api/')) return;
 
     e.respondWith(
         caches.match(e.request).then((cachedResponse) => {
-            // Return cached response if found, else fetch from network
-            return cachedResponse || fetch(e.request).then((networkResponse) => {
-                return caches.open(CACHE_NAME).then((cache) => {
-                    // Update cache with new file version
+            // Return cached file immediately (Speed)
+            const fetchPromise = fetch(e.request).then((networkResponse) => {
+                // Update cache in background (Freshness)
+                caches.open(CACHE_NAME).then((cache) => {
                     cache.put(e.request, networkResponse.clone());
-                    return networkResponse;
                 });
+                return networkResponse;
             });
+            
+            return cachedResponse || fetchPromise;
         })
     );
 });

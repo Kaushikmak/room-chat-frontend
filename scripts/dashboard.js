@@ -5,7 +5,6 @@ import { UI } from '../assets/js/ui.js';
 if (!API.isAuthenticated()) window.location.href = 'login.html';
 
 // --- CACHE STORE (Persistence) ---
-// Load stale data from disk immediately to prevent "Loading..." flicker
 const dashboardCache = {
     profile: tryParseJSON(localStorage.getItem('cache_profile')),
     friends: tryParseJSON(localStorage.getItem('cache_friends'))
@@ -35,7 +34,7 @@ function timeAgo(date) {
     return Math.floor(seconds) + " seconds ago";
 }
 
-// --- GLOBAL ACTIONS (Attached to Window for HTML Access) ---
+// --- GLOBAL ACTIONS (Attached to Window) ---
 
 window.toggleTheme = () => {
     const current = document.documentElement.getAttribute('data-theme');
@@ -140,7 +139,6 @@ async function initializeDashboard() {
     renderHistory(); // LocalStorage is synchronous/instant
 
     // 2. BACKGROUND REFRESH (Network)
-    // We await profile because it's critical, friends load in background
     await fetchProfile();
     fetchFriends();
 }
@@ -208,7 +206,7 @@ function renderFriends(friends) {
     container.innerHTML = friends.map(f => {
         const lastLogin = f.friend.last_login ? new Date(f.friend.last_login) : null;
         const now = new Date();
-        const isOnline = lastLogin && (now - lastLogin) < (15 * 60 * 1000); // 15 mins inactive = offline
+        const isOnline = lastLogin && (now - lastLogin) < (15 * 60 * 1000); 
         const timeText = lastLogin ? timeAgo(lastLogin) : 'Never';
         const statusColor = isOnline ? 'var(--success-color)' : 'gray';
 

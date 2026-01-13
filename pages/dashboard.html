@@ -15,9 +15,9 @@
             gap: 20px;
             max-width: 1200px;
             margin: 0 auto;
-            /* FIX: Enforce fixed height to prevent layout jumps */
+            /* FIX: Enforce fixed height on all screens to prevent jumping */
             height: calc(100vh - var(--nav-height) - 40px);
-            min-height: 600px; 
+            min-height: 600px; /* Minimum safety height */
         }
 
         @media (max-width: 768px) {
@@ -76,12 +76,13 @@
         .panel { 
             display: none; 
             height: 100%; 
-            /* FIX: Always show scrollbar track to prevent width jump */
+            /* FIX: Always show scrollbar track to prevent layout jump width-wise */
             overflow-y: scroll; 
             padding-right: 5px; 
         }
         .panel.active { display: block; animation: fadeIn 0.3s ease; }
 
+        /* SECTION HEADERS */
         .panel-header {
             border-bottom: 3px solid var(--box-text);
             padding-bottom: 10px;
@@ -89,7 +90,7 @@
             color: var(--box-text);
         }
 
-        /* SETTINGS GRID */
+        /* SETTINGS FORM GRID */
         .settings-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -97,7 +98,7 @@
         }
         @media (max-width: 600px) { .settings-grid { grid-template-columns: 1fr; } }
 
-        /* FRIENDS & LOGS */
+        /* STAT BADGES */
         .stat-row { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
         .stat-pill { 
             background: var(--bg-color); 
@@ -108,6 +109,7 @@
             font-weight: bold; 
         }
 
+        /* FRIENDS GRID */
         .friend-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -123,6 +125,7 @@
         }
         .friend-card:hover { transform: translate(-3px, -3px); box-shadow: 4px 4px 0 var(--box-text); }
         
+        /* LOGS LIST */
         .log-item {
             padding: 12px;
             border-bottom: 2px solid var(--box-text);
@@ -160,9 +163,7 @@
                     <button class="dash-nav-btn" onclick="window.switchPanel('network')">ALLIES NETWORK</button>
                     <button class="dash-nav-btn" onclick="window.switchPanel('logs')">DIVE LOGS</button>
                     
-                    <div style="flex-grow: 1;"></div> 
-                    
-                    <button class="dash-nav-btn" onclick="window.toggleTheme()" style="border-top: 2px solid var(--box-text);">
+                    <div style="flex-grow: 1;"></div> <button class="dash-nav-btn" onclick="window.toggleTheme()" style="border-top: 2px solid var(--box-text);">
                         TOGGLE THEME <span id="theme-icon">☀️</span>
                     </button>
                     <button class="dash-nav-btn" onclick="window.handleLogout()" style="background: var(--error-color); color: white; border-bottom: none;">
@@ -175,6 +176,7 @@
                 
                 <div id="panel-settings" class="panel active">
                     <h2 class="panel-header">IDENTITY CONFIGURATION</h2>
+                    
                     <form onsubmit="window.handleIdentityUpdate(event)" style="margin-bottom: 30px;">
                         <div class="settings-grid">
                             <div class="input-group">
@@ -192,6 +194,7 @@
                     </form>
 
                     <h2 class="panel-header" style="color: var(--error-color); border-color: var(--error-color);">SECURITY PROTOCOLS</h2>
+                    
                     <form onsubmit="window.handleSecurityUpdate(event)">
                         <div class="input-group">
                             <label>NEW PASSPHRASE</label>
@@ -225,5 +228,12 @@
     </div>
 
     <script type="module" src="../scripts/dashboard.js"></script>
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('../sw.js') 
+            .then(() => console.log('Service Worker Active'))
+            .catch(err => console.error('SW Fail:', err));
+    }
+</script>
 </body>
 </html>
