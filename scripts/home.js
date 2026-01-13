@@ -31,19 +31,17 @@ async function initializePage() {
     // 3. SHOW LOADERS (Only if cache is empty)
     if (allRooms.length === 0) document.getElementById('public-list-container').innerHTML = getLoaderHtml();
     if (allFriends.length === 0) document.getElementById('friends-list').innerHTML = getLoaderHtml();
-    // Activity usually updates fast, so we can show loader or cached
+    
     const cachedActivity = JSON.parse(localStorage.getItem('cache_activity') || '[]');
     if (cachedActivity.length > 0) renderActivity(cachedActivity);
     else document.getElementById('activity-feed').innerHTML = getLoaderHtml();
 
-    // 4. NETWORK REFRESH (Revalidate)
-    // Fetch fresh data in background and update UI/Cache
-    await Promise.all([
-        fetchTopics(), 
-        fetchRooms(), 
-        fetchFriends(), 
-        fetchActivity()
-    ]);
+    // 4. NETWORK REFRESH (Sequential to avoid 429 Rate Limits)
+    // We await them one by one so we don't spam the server
+    await fetchTopics();
+    await fetchRooms();
+    await fetchFriends();
+    await fetchActivity();
     
     // 5. RE-RENDER with fresh data
     renderPublicList();
@@ -369,27 +367,22 @@ window.openDm = async (username) => {
 };
 
 // --- CHAT LOGIC (Optimized) ---
+
+// Mobile: Exit chat view
 window.exitRoom = () => {
-    // Remove the class to show the room list again
     document.body.classList.remove('mobile-chat-open');
 };
 
 window.loadRoom = async (id) => {
     currentRoomId = id;
+    
+    // Mobile: Enter chat view
     if (window.innerWidth <= 768) {
         document.body.classList.add('mobile-chat-open');
     }
+
     const msgContainer = document.getElementById('messages-container');
     const form = document.getElementById('chat-form');
-
-    if (messageCache[id]) {
-        renderMessages(messageCache[id]);
-        msgContainer.scrollTop = msgContainer.scrollHeight;
-        form.classList.remove('hidden');
-    } else {
-        msgContainer.innerHTML = getLoaderHtml();
-        form.classList.add('hidden'); 
-    }
 
     // 1. INSTANT LOAD FROM CACHE
     if (messageCache[id]) {
@@ -488,7 +481,6 @@ window.sendMessage = async (e) => {
         await fetchMessages(currentRoomId); 
     } else {
         alert("Transmission failed.");
-        // Optional: Remove optimistic message here if needed
     }
 };
 

@@ -49,11 +49,12 @@ self.addEventListener('fetch', (e) => {
 
     e.respondWith(
         caches.match(e.request).then((cachedResponse) => {
-            // Return cached file immediately (Speed)
             const fetchPromise = fetch(e.request).then((networkResponse) => {
-                // Update cache in background (Freshness)
+                // FIX: Clone the response BEFORE using it
+                const responseToCache = networkResponse.clone();
+                
                 caches.open(CACHE_NAME).then((cache) => {
-                    cache.put(e.request, networkResponse.clone());
+                    cache.put(e.request, responseToCache);
                 });
                 return networkResponse;
             });
