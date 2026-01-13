@@ -6,6 +6,9 @@ let allTopics = [];
 let allFriends = []; 
 let expandedTopics = new Set(); 
 
+// --- CACHE STORE ---
+let messageCache = {}; // Stores messages by room ID: { "1": [...messages], "2": [...] }
+
 // --- UI & THEME ---
 window.toggleTheme = () => {
     const current = document.documentElement.getAttribute('data-theme');
@@ -31,6 +34,7 @@ async function init() {
     document.documentElement.setAttribute('data-theme', savedTheme);
     document.getElementById('theme-icon').textContent = savedTheme === 'dark' ? '🌙' : '☀️';
     
+    // Parallel Fetch for startup speed
     await Promise.all([fetchTopics(), fetchRooms(), fetchFriends(), fetchActivity()]);
     
     renderPublicList();
@@ -38,11 +42,14 @@ async function init() {
 }
 
 async function verifyUserIdentity() {
-    const res = await API.request('/api/users/profile/', 'GET', null, true);
-    if (res.ok) {
-        localStorage.setItem('username', res.data.username);
-        setAvatar();
+    // Only fetch if we don't have it (optional optimization)
+    if (!localStorage.getItem('username')) {
+        const res = await API.request('/api/users/profile/', 'GET', null, true);
+        if (res.ok) {
+            localStorage.setItem('username', res.data.username);
+        }
     }
+    setAvatar();
 }
 
 // --- DATA FETCHING ---
@@ -154,9 +161,7 @@ window.renderPublicList = (filterText = "") => {
     }
 };
 
-// --- NEW ROOM ACTION LOGIC (No Alerts) ---
-
-// Edit Logic
+// --- ROOM ACTIONS ---
 window.openEditRoom = (id, currentName, e) => {
     e.stopPropagation();
     document.getElementById('edit-room-id').value = id;
@@ -178,7 +183,6 @@ window.submitEditRoom = async () => {
     if (res.ok) {
         await fetchRooms();
         renderPublicList();
-        // Update header if active
         if (currentRoomId == id) {
             document.getElementById('active-room-name').textContent = newName;
         }
@@ -188,7 +192,6 @@ window.submitEditRoom = async () => {
     }
 };
 
-// Delete Logic
 window.openDeleteRoom = (id, e) => {
     e.stopPropagation();
     document.getElementById('delete-room-id').value = id;
@@ -201,7 +204,6 @@ window.closeDeleteModal = () => {
 
 window.confirmDeleteRoom = async () => {
     const id = document.getElementById('delete-room-id').value;
-    
     const res = await API.request(`/api/rooms/${id}/`, 'DELETE', null, true);
     if (res.ok) {
         await fetchRooms();
@@ -218,7 +220,6 @@ window.confirmDeleteRoom = async () => {
     }
 };
 
-// --- EXISTING TOGGLES ---
 window.toggleTopic = (id) => {
     if (expandedTopics.has(id)) expandedTopics.delete(id);
     else expandedTopics.add(id);
@@ -268,8 +269,7 @@ window.submitCreate = async (e) => {
             renderPublicList();
             window.closeModal();
         } else {
-            const errorMsg = res.data && res.data.detail ? res.data.detail : 'Failed to create topic';
-            alert(errorMsg);
+            alert(res.data.detail || 'Failed to create topic');
         }
     } else {
         let topicId = document.getElementById('create-topic-select').value;
@@ -282,13 +282,11 @@ window.submitCreate = async (e) => {
             renderPublicList();
             window.closeModal();
         } else {
-            const errorMsg = res.data && res.data.detail ? res.data.detail : 'Failed to create room';
-            alert(errorMsg);
+            alert(res.data.detail || 'Failed to create room');
         }
     }
 };
 
-// --- DM & FRIENDS LOGIC (Preserved) ---
 window.renderDmList = () => {
     const container = document.getElementById('dm-rooms-list');
     if (allFriends.length === 0) {
@@ -316,24 +314,45 @@ window.openDm = async (username) => {
         const headerName = document.getElementById('active-room-name');
         if(headerName) headerName.textContent = "@" + username.toUpperCase();
     } else {
-        console.error("Failed to open DM", res);
         alert("Could not open transmission line.");
     }
 };
 
-// --- CHAT LOGIC ---
+// --- OPTIMIZED CHAT LOGIC ---
+
 window.loadRoom = async (id) => {
     currentRoomId = id;
-    const res = await API.request(`/api/rooms/${id}/`);
-    if (res.ok) {
-        document.getElementById('active-room-name').textContent = res.data.name;
-        addToHistory(res.data);
-        document.getElementById('chat-form').classList.remove('hidden');
-        await fetchMessages(id);
-        
-        if (window.pollInterval) clearInterval(window.pollInterval);
-        window.pollInterval = setInterval(() => fetchMessages(id), 5000);
+    
+    // 1. INSTANT LOAD FROM CACHE (Speed Boost)
+    if (messageCache[id]) {
+        renderMessages(messageCache[id]);
+        document.getElementById('messages-container').scrollTop = document.getElementById('messages-container').scrollHeight;
+    } else {
+        document.getElementById('messages-container').innerHTML = '<div style="text-align: center; margin-top: 50px; opacity: 0.5;">Establishing connection...</div>';
     }
+
+    document.getElementById('chat-form').classList.remove('hidden');
+
+    // 2. PARALLEL FETCH (Network Boost)
+    // Fetch room details AND fresh messages at the same time
+    const [roomRes, msgRes] = await Promise.all([
+        API.request(`/api/rooms/${id}/`),
+        API.request(`/api/rooms/${id}/messages/`)
+    ]);
+
+    if (roomRes.ok) {
+        document.getElementById('active-room-name').textContent = roomRes.data.name;
+        addToHistory(roomRes.data);
+    }
+
+    if (msgRes.ok) {
+        messageCache[id] = msgRes.data;
+        renderMessages(msgRes.data);
+    }
+    
+    // 3. POLLING (Background)
+    if (window.pollInterval) clearInterval(window.pollInterval);
+    window.pollInterval = setInterval(() => fetchMessages(id), 5000);
 };
 
 function addToHistory(room) {
@@ -345,33 +364,69 @@ function addToHistory(room) {
     localStorage.setItem('room_history', JSON.stringify(history));
 }
 
-async function fetchMessages(id) {
-    const res = await API.request(`/api/rooms/${id}/messages/`);
+// Optimized Render: Only updates DOM if html string changed
+function renderMessages(messages) {
     const me = localStorage.getItem('username'); 
-    if (res.ok) {
-        document.getElementById('messages-container').innerHTML = res.data.map(m => {
-            const isMine = m.user.username.toLowerCase() === (me ? me.toLowerCase() : '');
-            return `
-                <div class="message-row ${isMine ? 'mine' : 'theirs'}">
-                    <div class="message-bubble ${isMine ? 'mine' : 'theirs'}">
-                        <small class="mention-tag">${m.user.username.toUpperCase()}</small><br>${m.body}
-                    </div>
-                </div>`;
-        }).join('');
-        const container = document.getElementById('messages-container');
+    const html = messages.map(m => {
+        const isMine = m.user.username.toLowerCase() === (me ? me.toLowerCase() : '');
+        return `
+            <div class="message-row ${isMine ? 'mine' : 'theirs'}">
+                <div class="message-bubble ${isMine ? 'mine' : 'theirs'}">
+                    <small class="mention-tag">${m.user.username.toUpperCase()}</small><br>${m.body}
+                </div>
+            </div>`;
+    }).join('');
+
+    const container = document.getElementById('messages-container');
+    if (container.innerHTML !== html) {
+        container.innerHTML = html;
         container.scrollTop = container.scrollHeight;
     }
 }
 
+// Background Fetch for Polling
+async function fetchMessages(id) {
+    const res = await API.request(`/api/rooms/${id}/messages/`);
+    if (res.ok) {
+        // Only update if data is different (DOM check handled in renderMessages)
+        messageCache[id] = res.data;
+        renderMessages(res.data);
+    }
+}
+
+// Optimistic Send
 window.sendMessage = async (e) => {
     e.preventDefault();
     const input = document.getElementById('msg-body');
-    if (!input.value || !currentRoomId) return;
-    const res = await API.request(`/api/rooms/${currentRoomId}/messages/`, 'POST', { body: input.value }, true);
-    if (res.ok) { input.value = ''; await fetchMessages(currentRoomId); }
+    const body = input.value;
+    if (!body || !currentRoomId) return;
+
+    // 1. Optimistic Update (Show immediately)
+    const me = localStorage.getItem('username');
+    const tempMsg = {
+        user: { username: me },
+        body: body,
+        created: new Date().toISOString()
+    };
+    
+    if (!messageCache[currentRoomId]) messageCache[currentRoomId] = [];
+    messageCache[currentRoomId].push(tempMsg);
+    renderMessages(messageCache[currentRoomId]);
+    input.value = '';
+
+    // 2. Network Request
+    const res = await API.request(`/api/rooms/${currentRoomId}/messages/`, 'POST', { body }, true);
+    
+    // 3. Sync
+    if (res.ok) { 
+        await fetchMessages(currentRoomId); // Get true server state
+    } else {
+        alert("Transmission failed.");
+        // Optional: Remove optimistic message here if failed
+    }
 };
 
-// ... (Search & Friend Logic kept same) ...
+// ... (Rest of Search/Friend Logic) ...
 let searchTimeout = null;
 window.handleUserSearch = (e) => {
     const query = e.target.value.trim();
@@ -403,7 +458,7 @@ document.addEventListener('click', (e) => {
     if (e.target !== container && e.target !== input) container.classList.add('hidden');
 });
 
-// ... (Friend Management) ...
+// Friend Management
 window.openManageFriends = () => { document.getElementById('friends-modal').classList.remove('hidden'); document.getElementById('add-friend-input').value = ''; document.getElementById('filter-friends-input').value = ''; renderManageFriendsList(); };
 window.closeFriendsModal = () => { document.getElementById('friends-modal').classList.add('hidden'); };
 window.renderManageFriendsList = (filterText = "") => { const container = document.getElementById('manage-friends-list'); const cleanFilter = filterText.toLowerCase(); const filtered = allFriends.filter(f => f.friend.username.toLowerCase().includes(cleanFilter)); if (filtered.length === 0) { container.innerHTML = '<div style="padding:15px; text-align:center; opacity:0.6;">No allies found.</div>'; return; } container.innerHTML = filtered.map(f => `<div class="friend-row"><span style="font-weight:600;">@${f.friend.username}</span><button onclick="window.handleRemoveFriend('${f.friend.username}')">REMOVE</button></div>`).join(''); };
