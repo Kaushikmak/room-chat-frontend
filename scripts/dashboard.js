@@ -4,56 +4,16 @@ import { UI } from '../assets/js/ui.js';
 // Auth Guard
 if (!API.isAuthenticated()) window.location.href = 'login.html';
 
-// --- CACHE STORE (The "Twitter" Strategy) ---
-// We store data here so we don't have to reload it every time we switch tabs.
-// --- CACHE STORE (Persistent) ---
-// Load from storage on startup
+// --- CACHE STORE (Persistence) ---
+// Load stale data from disk immediately to prevent "Loading..." flicker
 const dashboardCache = {
-    profile: JSON.parse(localStorage.getItem('cache_profile')),
-    friends: JSON.parse(localStorage.getItem('cache_friends'))
+    profile: tryParseJSON(localStorage.getItem('cache_profile')),
+    friends: tryParseJSON(localStorage.getItem('cache_friends'))
 };
 
-async function initializeDashboard() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    updateThemeIcon();
-
-    // 1. INSTANT LOAD: Show stale data immediately if it exists
-    if (dashboardCache.profile) updateProfileUI(dashboardCache.profile);
-    if (dashboardCache.friends) renderFriends(dashboardCache.friends);
-    renderHistory(); // Already uses localStorage
-
-    // 2. NETWORK REFRESH: Fetch fresh data in background
-    await fetchProfile();
-    fetchFriends(); // Don't await, let it update when ready
-}
-
-async function fetchProfile() {
-    // Fetch fresh data
-    const res = await API.request('/api/users/profile/', 'GET', null, true);
-    if (res.ok) {
-        dashboardCache.profile = res.data;
-        // SAVE TO DISK
-        localStorage.setItem('cache_profile', JSON.stringify(res.data));
-        updateProfileUI(res.data);
-    }
-}
-
-async function fetchFriends() {
-    const container = document.getElementById('friends-grid');
-    
-    // Only show loader if we have absolutely NO data (first time user)
-    if (!dashboardCache.friends) {
-        if(container) container.innerHTML = getLoaderHtml();
-    }
-
-    const res = await API.request('/api/users/friends/', 'GET', null, true);
-    if (res.ok) {
-        dashboardCache.friends = res.data;
-        // SAVE TO DISK
-        localStorage.setItem('cache_friends', JSON.stringify(res.data));
-        renderFriends(res.data);
-    }
+function tryParseJSON(jsonString) {
+    try { return jsonString ? JSON.parse(jsonString) : null; }
+    catch (e) { return null; }
 }
 
 // --- HELPER: Loader HTML ---
@@ -75,7 +35,7 @@ function timeAgo(date) {
     return Math.floor(seconds) + " seconds ago";
 }
 
-// --- GLOBAL ACTIONS ---
+// --- GLOBAL ACTIONS (Attached to Window for HTML Access) ---
 
 window.toggleTheme = () => {
     const current = document.documentElement.getAttribute('data-theme');
@@ -92,26 +52,25 @@ function updateThemeIcon() {
 }
 
 window.switchPanel = (panelId) => {
-    // Hide all panels
+    // 1. Hide all panels
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    // Deactivate nav buttons
+    // 2. Deactivate all buttons
     document.querySelectorAll('.dash-nav-btn').forEach(b => b.classList.remove('active'));
     
-    // Show target
+    // 3. Show target panel
     const targetPanel = document.getElementById(`panel-${panelId}`);
-    if(targetPanel) targetPanel.classList.add('active');
+    if (targetPanel) targetPanel.classList.add('active');
     
-    // Highlight button
+    // 4. Highlight specific button (Mapped by index or ID)
     const buttons = document.querySelectorAll('.dash-nav-btn');
     if (panelId === 'settings' && buttons[0]) buttons[0].classList.add('active');
     if (panelId === 'network' && buttons[1]) buttons[1].classList.add('active');
     if (panelId === 'logs' && buttons[2]) buttons[2].classList.add('active');
 
-    // INTELLIGENT LOADING (Only fetch if we haven't already, or refreshing)
+    // 5. Intelligent Refresh (Fetch if missing)
     if (panelId === 'network' && !dashboardCache.friends) {
-        fetchFriends(); 
+        fetchFriends();
     }
-    // Note: Settings and Logs are loaded on init, so we usually don't need to refetch on switch
 };
 
 window.handleIdentityUpdate = async (e) => {
@@ -128,7 +87,7 @@ window.handleIdentityUpdate = async (e) => {
 
     if (res.ok) {
         localStorage.setItem('username', username);
-        dashboardCache.profile = res.data; // Update Cache
+        localStorage.setItem('cache_profile', JSON.stringify(res.data)); // Update Cache
         UI.showStatus('status-message', "IDENTITY RECORDS UPDATED", "success");
         updateProfileUI(res.data);
     } else {
@@ -168,53 +127,51 @@ window.handleSecurityUpdate = async (e) => {
 
 window.handleLogout = () => API.logout();
 
-// --- DATA FETCHING ---
+// --- DATA FETCHING & RENDERING ---
 
 async function initializeDashboard() {
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
     updateThemeIcon();
 
-    // Parallel Fetch for speed
-    // We don't await fetchFriends here so the initial page load is faster. 
-    // Friends will load when the tab is clicked OR in background.
+    // 1. INSTANT RENDER (Cache)
+    if (dashboardCache.profile) updateProfileUI(dashboardCache.profile);
+    if (dashboardCache.friends) renderFriends(dashboardCache.friends);
+    renderHistory(); // LocalStorage is synchronous/instant
+
+    // 2. BACKGROUND REFRESH (Network)
+    // We await profile because it's critical, friends load in background
     await fetchProfile();
-    renderHistory(); 
-    
-    // Background fetch friends so it's ready when user clicks tab
-    fetchFriends(); 
+    fetchFriends();
 }
 
-// Update UI elements separate from fetching
 function updateProfileUI(user) {
     const nameEl = document.getElementById('sidebar-username');
     const avatarEl = document.getElementById('avatar-display');
     const loginEl = document.getElementById('last-login-badge');
 
-    if(nameEl) nameEl.textContent = user.username;
-    if(avatarEl) avatarEl.textContent = user.username.charAt(0).toUpperCase();
+    if (nameEl) nameEl.textContent = user.username;
+    if (avatarEl) avatarEl.textContent = user.username.charAt(0).toUpperCase();
     
     if (user.last_login && loginEl) {
         const date = new Date(user.last_login);
         loginEl.textContent = `LAST LOGIN: ${date.toLocaleDateString()}`;
     }
 
+    // Populate inputs if they are empty or match old data
     const userInput = document.getElementById('edit-username');
     const emailInput = document.getElementById('edit-email');
-    if(userInput) userInput.value = user.username;
-    if(emailInput) emailInput.value = user.email;
+    if (userInput && emailInput) {
+        userInput.value = user.username;
+        emailInput.value = user.email;
+    }
 }
 
 async function fetchProfile() {
-    // Return cached if exists (Speed!)
-    if (dashboardCache.profile) {
-        updateProfileUI(dashboardCache.profile);
-        return; 
-    }
-
     const res = await API.request('/api/users/profile/', 'GET', null, true);
     if (res.ok) {
         dashboardCache.profile = res.data;
+        localStorage.setItem('cache_profile', JSON.stringify(res.data));
         updateProfileUI(res.data);
     }
 }
@@ -222,22 +179,20 @@ async function fetchProfile() {
 async function fetchFriends() {
     const container = document.getElementById('friends-grid');
     
-    // 1. Instant Load from Cache
-    if (dashboardCache.friends) {
-        renderFriends(dashboardCache.friends);
-    } else {
-        // Only show loader if we have NO data
-        if(container) container.innerHTML = getLoaderHtml();
+    // Only show loader if we have NO data to show
+    if (!dashboardCache.friends && container) {
+        container.innerHTML = getLoaderHtml();
     }
 
-    // 2. Fetch in Background (Stale-While-Revalidate)
     const res = await API.request('/api/users/friends/', 'GET', null, true);
     if (res.ok) {
         dashboardCache.friends = res.data;
+        localStorage.setItem('cache_friends', JSON.stringify(res.data));
         renderFriends(res.data);
-    } else if (!dashboardCache.friends) {
-        // Only show error if we didn't have cached data to show
-        if(container) container.innerHTML = '<div style="padding:20px; text-align:center; opacity:0.6;">Network Error.</div>';
+    } else {
+        if (!dashboardCache.friends && container) {
+            container.innerHTML = '<div style="padding:20px; text-align:center; opacity:0.6;">Network Error.</div>';
+        }
     }
 }
 
@@ -253,9 +208,9 @@ function renderFriends(friends) {
     container.innerHTML = friends.map(f => {
         const lastLogin = f.friend.last_login ? new Date(f.friend.last_login) : null;
         const now = new Date();
-        const isOnline = lastLogin && (now - lastLogin) < (15 * 60 * 1000); 
-        const statusClass = isOnline ? 'status-online' : 'status-offline';
+        const isOnline = lastLogin && (now - lastLogin) < (15 * 60 * 1000); // 15 mins inactive = offline
         const timeText = lastLogin ? timeAgo(lastLogin) : 'Never';
+        const statusColor = isOnline ? 'var(--success-color)' : 'gray';
 
         return `
         <div class="friend-card" onclick="window.location.href='home.html'">
@@ -264,7 +219,8 @@ function renderFriends(friends) {
             </div>
             <div style="font-weight:900; font-size:1.1rem;">${f.friend.username}</div>
             <div style="font-size:0.8rem; opacity:0.7;">
-                ${isOnline ? '<span style="color:var(--success-color);">● ONLINE</span>' : timeText}
+                <span style="display:inline-block; width:8px; height:8px; background:${statusColor}; border-radius:50%; margin-right:5px;"></span>
+                ${isOnline ? 'ONLINE' : timeText}
             </div>
         </div>
         `;
@@ -273,9 +229,8 @@ function renderFriends(friends) {
 
 function renderHistory() {
     const container = document.getElementById('history-list');
-    if(!container) return;
+    if (!container) return;
 
-    // LocalStorage is instant, no need for async/loader
     const history = JSON.parse(localStorage.getItem('room_history') || '[]');
 
     if (history.length === 0) {
@@ -296,5 +251,5 @@ function renderHistory() {
     `).join('');
 }
 
-// Start
+// Start App
 initializeDashboard();
