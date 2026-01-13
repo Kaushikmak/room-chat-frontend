@@ -7,108 +7,39 @@ let allFriends = [];
 let expandedTopics = new Set(); 
 
 // --- CACHE STORE ---
-let messageCache = {}; // Stores messages by room ID: { "1": [...messages], "2": [...] }
+let messageCache = {}; 
 
 // --- HELPER: Loader HTML ---
 const getLoaderHtml = () => '<div class="loader-container"><span class="neo-spinner"></span></div>';
 
 // --- INIT ---
-async function init() {
+async function initializePage() {
     if (!API.isAuthenticated()) window.location.href = 'login.html';
     await verifyUserIdentity();
     
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
-    document.getElementById('theme-icon').textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+    const themeIcon = document.getElementById('theme-icon');
+    if(themeIcon) themeIcon.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
     
-    // 1. Show Loaders in all containers immediately
-    document.getElementById('public-list-container').innerHTML = getLoaderHtml();
-    document.getElementById('friends-list').innerHTML = getLoaderHtml();
-    document.getElementById('activity-feed').innerHTML = getLoaderHtml();
+    // 1. Show Loaders
+    const publicList = document.getElementById('public-list-container');
+    const friendsList = document.getElementById('friends-list');
+    const activityFeed = document.getElementById('activity-feed');
+
+    if(publicList) publicList.innerHTML = getLoaderHtml();
+    if(friendsList) friendsList.innerHTML = getLoaderHtml();
+    if(activityFeed) activityFeed.innerHTML = getLoaderHtml();
     
     // 2. Parallel Fetch
     await Promise.all([fetchTopics(), fetchRooms(), fetchFriends(), fetchActivity()]);
     
-    // 3. Render (will overwrite loaders)
+    // 3. Render
     renderPublicList();
-    renderDmList(); // Uses allFriends fetched above
-}
-
-// ... (fetch functions remain the same) ...
-
-// --- CHAT LOGIC ---
-window.loadRoom = async (id) => {
-    currentRoomId = id;
-    const msgContainer = document.getElementById('messages-container');
-    const form = document.getElementById('chat-form');
-
-    // 1. Check Cache
-    if (messageCache[id]) {
-        renderMessages(messageCache[id]);
-        msgContainer.scrollTop = msgContainer.scrollHeight;
-        form.classList.remove('hidden');
-    } else {
-        // 2. Show Loader if not in cache
-        msgContainer.innerHTML = getLoaderHtml();
-        form.classList.add('hidden'); // Hide form while loading
-    }
-
-    // 3. Fetch
-    const [roomRes, msgRes] = await Promise.all([
-        API.request(`/api/rooms/${id}/`),
-        API.request(`/api/rooms/${id}/messages/`)
-    ]);
-
-    if (roomRes.ok) {
-        document.getElementById('active-room-name').textContent = roomRes.data.name;
-        addToHistory(roomRes.data);
-    }
-
-    if (msgRes.ok) {
-        messageCache[id] = msgRes.data;
-        renderMessages(msgRes.data);
-        form.classList.remove('hidden'); // Show form now
-    }
-    
-    // 4. Start Polling
-    if (window.pollInterval) clearInterval(window.pollInterval);
-    window.pollInterval = setInterval(() => fetchMessages(id), 5000);
-};
-
-// --- UI & THEME ---
-window.toggleTheme = () => {
-    const current = document.documentElement.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
-    document.getElementById('theme-icon').textContent = next === 'dark' ? '🌙' : '☀️';
-};
-
-window.showTab = (type) => {
-    document.getElementById('rooms-nav-content').classList.toggle('hidden', type !== 'rooms');
-    document.getElementById('dms-nav-content').classList.toggle('hidden', type !== 'dms');
-    document.getElementById('btn-rooms').classList.toggle('active', type === 'rooms');
-    document.getElementById('btn-dms').classList.toggle('active', type === 'dms');
-};
-
-// --- INIT ---
-async function init() {
-    if (!API.isAuthenticated()) window.location.href = 'login.html';
-    await verifyUserIdentity();
-    
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    document.getElementById('theme-icon').textContent = savedTheme === 'dark' ? '🌙' : '☀️';
-    
-    // Parallel Fetch for startup speed
-    await Promise.all([fetchTopics(), fetchRooms(), fetchFriends(), fetchActivity()]);
-    
-    renderPublicList();
-    renderDmList();
+    renderDmList(); 
 }
 
 async function verifyUserIdentity() {
-    // Only fetch if we don't have it (optional optimization)
     if (!localStorage.getItem('username')) {
         const res = await API.request('/api/users/profile/', 'GET', null, true);
         if (res.ok) {
@@ -133,9 +64,12 @@ async function fetchFriends() {
     const res = await API.request('/api/users/friends/', 'GET', null, true);
     if (res.ok) {
         allFriends = res.data;
-        document.getElementById('friends-list').innerHTML = allFriends.map(f => 
-            `<div class="list-item" onclick="window.openDm('${f.friend.username}')">@${f.friend.username}</div>`
-        ).join('');
+        const friendsList = document.getElementById('friends-list');
+        if(friendsList) {
+            friendsList.innerHTML = allFriends.map(f => 
+                `<div class="list-item" onclick="window.openDm('${f.friend.username}')">@${f.friend.username}</div>`
+            ).join('');
+        }
         renderDmList();
     }
 }
@@ -144,6 +78,8 @@ async function fetchActivity() {
     const res = await API.request('/api/activity/');
     if (res.ok) {
         const container = document.getElementById('activity-feed');
+        if (!container) return;
+        
         if (res.data.length === 0) {
             container.innerHTML = '<div style="padding:15px; opacity:0.6;">Silence on the airwaves...</div>';
             return;
@@ -169,11 +105,12 @@ async function fetchActivity() {
 // --- RENDER LOGIC ---
 window.renderPublicList = (filterText = "") => {
     const container = document.getElementById('public-list-container');
+    if (!container) return;
     container.innerHTML = "";
+    
     const cleanFilter = filterText.toLowerCase();
     const myUsername = localStorage.getItem('username');
 
-    // Helper: Room HTML with Neo-Brutalist Actions
     const getRoomHtml = (r) => {
         const isOwner = r.host && r.host.username === myUsername;
         const actions = isOwner ? `
@@ -189,7 +126,6 @@ window.renderPublicList = (filterText = "") => {
             </div>`;
     };
 
-    // Filter Topics
     const visibleTopics = allTopics.filter(t => t.name.toLowerCase().includes(cleanFilter));
 
     visibleTopics.forEach(topic => {
@@ -217,7 +153,6 @@ window.renderPublicList = (filterText = "") => {
         container.innerHTML += html;
     });
 
-    // Handle "Other" Rooms
     const uncategorized = allRooms.filter(r => !r.is_direct_message && !r.topic);
     if (uncategorized.length > 0) {
         container.innerHTML += `<div class="topic-header">OTHER / GENERAL</div>`;
@@ -227,9 +162,31 @@ window.renderPublicList = (filterText = "") => {
     }
 };
 
-// --- ROOM ACTIONS ---
+// --- GLOBAL ACTIONS (Attached to Window) ---
+
+window.toggleTheme = () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    const icon = document.getElementById('theme-icon');
+    if(icon) icon.textContent = next === 'dark' ? '🌙' : '☀️';
+};
+
+window.showTab = (type) => {
+    const roomsContent = document.getElementById('rooms-nav-content');
+    const dmsContent = document.getElementById('dms-nav-content');
+    const btnRooms = document.getElementById('btn-rooms');
+    const btnDms = document.getElementById('btn-dms');
+
+    if (roomsContent) roomsContent.classList.toggle('hidden', type !== 'rooms');
+    if (dmsContent) dmsContent.classList.toggle('hidden', type !== 'dms');
+    if (btnRooms) btnRooms.classList.toggle('active', type === 'rooms');
+    if (btnDms) btnDms.classList.toggle('active', type === 'dms');
+};
+
 window.openEditRoom = (id, currentName, e) => {
-    e.stopPropagation();
+    if(e) e.stopPropagation();
     document.getElementById('edit-room-id').value = id;
     document.getElementById('edit-room-name').value = currentName;
     document.getElementById('edit-room-modal').classList.remove('hidden');
@@ -259,7 +216,7 @@ window.submitEditRoom = async () => {
 };
 
 window.openDeleteRoom = (id, e) => {
-    e.stopPropagation();
+    if(e) e.stopPropagation();
     document.getElementById('delete-room-id').value = id;
     document.getElementById('delete-room-modal').classList.remove('hidden');
 };
@@ -289,14 +246,14 @@ window.confirmDeleteRoom = async () => {
 window.toggleTopic = (id) => {
     if (expandedTopics.has(id)) expandedTopics.delete(id);
     else expandedTopics.add(id);
-    renderPublicList(document.getElementById('search-input').value);
+    const searchInput = document.getElementById('search-input');
+    renderPublicList(searchInput ? searchInput.value : "");
 };
 
 window.handleSearch = (e) => {
     renderPublicList(e.target.value);
 };
 
-// --- MODAL & CREATE LOGIC ---
 window.openCreateModal = (type) => {
     const modal = document.getElementById('create-modal');
     const title = document.getElementById('modal-title');
@@ -355,6 +312,8 @@ window.submitCreate = async (e) => {
 
 window.renderDmList = () => {
     const container = document.getElementById('dm-rooms-list');
+    if (!container) return;
+    
     if (allFriends.length === 0) {
         container.innerHTML = '<div style="padding:10px; opacity:0.7;">No friends found.</div>';
         return;
@@ -388,19 +347,21 @@ window.openDm = async (username) => {
 
 window.loadRoom = async (id) => {
     currentRoomId = id;
-    
-    // 1. INSTANT LOAD FROM CACHE (Speed Boost)
+    const msgContainer = document.getElementById('messages-container');
+    const form = document.getElementById('chat-form');
+
+    // 1. Check Cache
     if (messageCache[id]) {
         renderMessages(messageCache[id]);
-        document.getElementById('messages-container').scrollTop = document.getElementById('messages-container').scrollHeight;
+        msgContainer.scrollTop = msgContainer.scrollHeight;
+        form.classList.remove('hidden');
     } else {
-        document.getElementById('messages-container').innerHTML = '<div style="text-align: center; margin-top: 50px; opacity: 0.5;">Establishing connection...</div>';
+        // 2. Show Loader
+        msgContainer.innerHTML = getLoaderHtml();
+        form.classList.add('hidden'); 
     }
 
-    document.getElementById('chat-form').classList.remove('hidden');
-
-    // 2. PARALLEL FETCH (Network Boost)
-    // Fetch room details AND fresh messages at the same time
+    // 3. Fetch
     const [roomRes, msgRes] = await Promise.all([
         API.request(`/api/rooms/${id}/`),
         API.request(`/api/rooms/${id}/messages/`)
@@ -414,9 +375,10 @@ window.loadRoom = async (id) => {
     if (msgRes.ok) {
         messageCache[id] = msgRes.data;
         renderMessages(msgRes.data);
+        form.classList.remove('hidden'); 
     }
     
-    // 3. POLLING (Background)
+    // 4. Start Polling
     if (window.pollInterval) clearInterval(window.pollInterval);
     window.pollInterval = setInterval(() => fetchMessages(id), 5000);
 };
@@ -430,7 +392,6 @@ function addToHistory(room) {
     localStorage.setItem('room_history', JSON.stringify(history));
 }
 
-// Optimized Render: Only updates DOM if html string changed
 function renderMessages(messages) {
     const me = localStorage.getItem('username'); 
     const html = messages.map(m => {
@@ -450,24 +411,21 @@ function renderMessages(messages) {
     }
 }
 
-// Background Fetch for Polling
 async function fetchMessages(id) {
     const res = await API.request(`/api/rooms/${id}/messages/`);
     if (res.ok) {
-        // Only update if data is different (DOM check handled in renderMessages)
         messageCache[id] = res.data;
         renderMessages(res.data);
     }
 }
 
-// Optimistic Send
 window.sendMessage = async (e) => {
     e.preventDefault();
     const input = document.getElementById('msg-body');
     const body = input.value;
     if (!body || !currentRoomId) return;
 
-    // 1. Optimistic Update (Show immediately)
+    // Optimistic Update
     const me = localStorage.getItem('username');
     const tempMsg = {
         user: { username: me },
@@ -480,19 +438,15 @@ window.sendMessage = async (e) => {
     renderMessages(messageCache[currentRoomId]);
     input.value = '';
 
-    // 2. Network Request
     const res = await API.request(`/api/rooms/${currentRoomId}/messages/`, 'POST', { body }, true);
     
-    // 3. Sync
     if (res.ok) { 
-        await fetchMessages(currentRoomId); // Get true server state
+        await fetchMessages(currentRoomId); 
     } else {
         alert("Transmission failed.");
-        // Optional: Remove optimistic message here if failed
     }
 };
 
-// ... (Rest of Search/Friend Logic) ...
 let searchTimeout = null;
 window.handleUserSearch = (e) => {
     const query = e.target.value.trim();
@@ -514,27 +468,78 @@ window.handleUserSearch = (e) => {
         }
     }, 300);
 };
+
 window.selectSearchUser = (username) => {
     document.getElementById('add-friend-input').value = username;
     document.getElementById('search-dropdown-container').classList.add('hidden');
 };
+
 document.addEventListener('click', (e) => {
     const container = document.getElementById('search-dropdown-container');
     const input = document.getElementById('add-friend-input');
-    if (e.target !== container && e.target !== input) container.classList.add('hidden');
+    if (container && input && e.target !== container && e.target !== input) container.classList.add('hidden');
 });
 
 // Friend Management
-window.openManageFriends = () => { document.getElementById('friends-modal').classList.remove('hidden'); document.getElementById('add-friend-input').value = ''; document.getElementById('filter-friends-input').value = ''; renderManageFriendsList(); };
-window.closeFriendsModal = () => { document.getElementById('friends-modal').classList.add('hidden'); };
-window.renderManageFriendsList = (filterText = "") => { const container = document.getElementById('manage-friends-list'); const cleanFilter = filterText.toLowerCase(); const filtered = allFriends.filter(f => f.friend.username.toLowerCase().includes(cleanFilter)); if (filtered.length === 0) { container.innerHTML = '<div style="padding:15px; text-align:center; opacity:0.6;">No allies found.</div>'; return; } container.innerHTML = filtered.map(f => `<div class="friend-row"><span style="font-weight:600;">@${f.friend.username}</span><button onclick="window.handleRemoveFriend('${f.friend.username}')">REMOVE</button></div>`).join(''); };
+window.openManageFriends = () => { 
+    document.getElementById('friends-modal').classList.remove('hidden'); 
+    document.getElementById('add-friend-input').value = ''; 
+    document.getElementById('filter-friends-input').value = ''; 
+    renderManageFriendsList(); 
+};
+
+window.closeFriendsModal = () => { 
+    document.getElementById('friends-modal').classList.add('hidden'); 
+};
+
+window.renderManageFriendsList = (filterText = "") => { 
+    const container = document.getElementById('manage-friends-list'); 
+    const cleanFilter = filterText.toLowerCase(); 
+    const filtered = allFriends.filter(f => f.friend.username.toLowerCase().includes(cleanFilter)); 
+    if (filtered.length === 0) { 
+        container.innerHTML = '<div style="padding:15px; text-align:center; opacity:0.6;">No allies found.</div>'; 
+        return; 
+    } 
+    container.innerHTML = filtered.map(f => `<div class="friend-row"><span style="font-weight:600;">@${f.friend.username}</span><button onclick="window.handleRemoveFriend('${f.friend.username}')">REMOVE</button></div>`).join(''); 
+};
+
 window.filterFriends = (e) => { renderManageFriendsList(e.target.value); };
-window.handleAddFriend = async (e) => { e.preventDefault(); const input = document.getElementById('add-friend-input'); const username = input.value.trim(); if (!username) return; const res = await API.request('/api/users/friends/', 'POST', { username }, true); if (res.ok) { if (res.data.status === 'Already friends') { alert("You are already allies."); } else { input.value = ''; await fetchFriends(); renderManageFriendsList(); } } else { alert(res.data.detail || "Failed to add friend. Check spelling."); } };
-window.handleRemoveFriend = async (username) => { if (!confirm(`Sever alliance with @${username}?`)) return; const res = await API.request(`/api/users/friends/${username}/`, 'DELETE', null, true); if (res.ok) { await fetchFriends(); renderManageFriendsList(document.getElementById('filter-friends-input').value); } else { alert("Failed to remove friend."); } };
+
+window.handleAddFriend = async (e) => { 
+    e.preventDefault(); 
+    const input = document.getElementById('add-friend-input'); 
+    const username = input.value.trim(); 
+    if (!username) return; 
+    const res = await API.request('/api/users/friends/', 'POST', { username }, true); 
+    if (res.ok) { 
+        if (res.data.status === 'Already friends') { 
+            alert("You are already allies."); 
+        } else { 
+            input.value = ''; 
+            await fetchFriends(); 
+            renderManageFriendsList(); 
+        } 
+    } else { 
+        alert(res.data.detail || "Failed to add friend. Check spelling."); 
+    } 
+};
+
+window.handleRemoveFriend = async (username) => { 
+    if (!confirm(`Sever alliance with @${username}?`)) return; 
+    const res = await API.request(`/api/users/friends/${username}/`, 'DELETE', null, true); 
+    if (res.ok) { 
+        await fetchFriends(); 
+        renderManageFriendsList(document.getElementById('filter-friends-input').value); 
+    } else { 
+        alert("Failed to remove friend."); 
+    } 
+};
 
 function setAvatar() {
     const user = localStorage.getItem('username') || "U";
-    document.getElementById('user-avatar').textContent = user.charAt(0).toUpperCase();
+    const avatar = document.getElementById('user-avatar');
+    if(avatar) avatar.textContent = user.charAt(0).toUpperCase();
 }
 
-init();
+// Start app
+initializePage();
