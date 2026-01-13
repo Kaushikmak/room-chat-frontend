@@ -11,7 +11,7 @@
         /* DASHBOARD LAYOUT */
         .dash-container {
             display: grid;
-            grid-template-columns: 300px 1fr;
+            grid-template-columns: 300px minmax(0, 1fr); /* FIXED: Prevents content blowout */
             gap: 20px;
             max-width: 1200px;
             margin: 0 auto;
@@ -26,15 +26,18 @@
         .profile-card {
             text-align: center;
             background: var(--box-bg);
+            color: var(--box-text);
             display: flex;
             flex-direction: column;
             gap: 15px;
             height: 100%;
+            border: var(--border-width) solid var(--box-text); /* Theme Border */
         }
 
         .large-avatar {
             width: 100px; height: 100px;
-            background: black; color: white;
+            background: var(--box-text); /* Theme aware */
+            color: var(--box-bg);
             border-radius: 50%;
             margin: 0 auto;
             display: flex; align-items: center; justify-content: center;
@@ -51,20 +54,28 @@
             padding: 15px;
             background: transparent;
             border: none;
-            border-bottom: 2px solid black;
+            border-bottom: 2px solid var(--box-text); /* Theme Border */
             font-family: var(--font-stack);
             font-weight: 800;
             font-size: 1rem;
             cursor: pointer;
             transition: all 0.2s;
-            color: var(--box-text);
+            color: var(--box-text); /* Theme Text */
         }
         .dash-nav-btn:hover { background: var(--main-accent); color: white; padding-left: 20px; }
-        .dash-nav-btn.active { background: black; color: white; padding-left: 20px; border-left: 5px solid var(--success-color); }
+        .dash-nav-btn.active { background: var(--box-text); color: var(--box-bg); padding-left: 20px; border-left: 5px solid var(--success-color); }
 
         /* CONTENT PANELS */
-        .panel { display: none; height: 100%; overflow-y: auto; }
+        .panel { display: none; height: 100%; overflow-y: auto; padding-right: 5px; } /* Added padding for scrollbar */
         .panel.active { display: block; animation: fadeIn 0.3s ease; }
+
+        /* SECTION HEADERS */
+        .panel-header {
+            border-bottom: 3px solid var(--box-text);
+            padding-bottom: 10px;
+            margin-top: 0;
+            color: var(--box-text);
+        }
 
         /* SETTINGS FORM GRID */
         .settings-grid {
@@ -78,7 +89,8 @@
         .stat-row { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
         .stat-pill { 
             background: var(--bg-color); 
-            border: 2px solid black; 
+            color: var(--text-color);
+            border: 2px solid var(--box-text); /* Theme Border */
             padding: 4px 8px; 
             font-size: 0.75rem; 
             font-weight: bold; 
@@ -91,13 +103,24 @@
             gap: 15px;
         }
         .friend-card {
-            border: 2px solid black;
-            background: white;
+            border: 2px solid var(--box-text); /* Theme Border */
+            background: var(--box-bg); /* Theme BG */
+            color: var(--box-text);
             padding: 15px;
             text-align: center;
             transition: transform 0.1s;
         }
-        .friend-card:hover { transform: translate(-3px, -3px); box-shadow: 4px 4px 0 black; }
+        .friend-card:hover { transform: translate(-3px, -3px); box-shadow: 4px 4px 0 var(--box-text); }
+        
+        /* LOGS LIST */
+        .log-item {
+            padding: 12px;
+            border-bottom: 2px solid var(--box-text);
+            display: flex; 
+            justify-content: space-between;
+            transition: background 0.2s;
+        }
+        .log-item:hover { background: var(--bg-color); }
     </style>
 </head>
 <body>
@@ -111,10 +134,10 @@
     <div class="main-container">
         <div class="dash-container">
             
-            <aside class="neo-box profile-card" style="padding: 0;">
-                <div style="padding: 30px 20px; background: var(--bg-color); border-bottom: 3px solid black;">
+            <aside class="neo-box profile-card" style="padding: 0; overflow: hidden;">
+                <div style="padding: 30px 20px; background: var(--bg-color); border-bottom: 3px solid var(--box-text);">
                     <div id="avatar-display" class="large-avatar">?</div>
-                    <h2 id="sidebar-username" style="margin: 15px 0 5px 0; text-transform: uppercase; font-size: 1.5rem;">LOADING</h2>
+                    <h2 id="sidebar-username" style="margin: 15px 0 5px 0; text-transform: uppercase; font-size: 1.5rem; color: var(--text-color);">LOADING</h2>
                     <div class="stat-row">
                         <div class="stat-pill">OPERATOR</div>
                         <div class="stat-pill" id="last-login-badge">UNKNOWN LOGIN</div>
@@ -126,19 +149,19 @@
                     <button class="dash-nav-btn" onclick="switchPanel('network')">ALLIES NETWORK</button>
                     <button class="dash-nav-btn" onclick="switchPanel('logs')">DIVE LOGS</button>
                     
-                    <div style="flex-grow: 1;"></div> <button class="dash-nav-btn" onclick="window.toggleTheme()" style="border-top: 2px solid black;">
+                    <div style="flex-grow: 1;"></div> <button class="dash-nav-btn" onclick="window.toggleTheme()" style="border-top: 2px solid var(--box-text);">
                         TOGGLE THEME <span id="theme-icon">☀️</span>
                     </button>
-                    <button class="dash-nav-btn" onclick="handleLogout()" style="background: var(--error-color); color: white;">
+                    <button class="dash-nav-btn" onclick="handleLogout()" style="background: var(--error-color); color: white; border-bottom: none;">
                         TERMINATE SESSION
                     </button>
                 </div>
             </aside>
 
-            <main class="neo-box" style="position: relative; overflow: hidden;">
+            <main class="neo-box" style="position: relative; overflow: hidden; border-color: var(--box-text);">
                 
                 <div id="panel-settings" class="panel active">
-                    <h2 style="border-bottom: 3px solid black; padding-bottom: 10px; margin-top: 0;">IDENTITY CONFIGURATION</h2>
+                    <h2 class="panel-header">IDENTITY CONFIGURATION</h2>
                     
                     <form onsubmit="handleIdentityUpdate(event)" style="margin-bottom: 30px;">
                         <div class="settings-grid">
@@ -151,19 +174,19 @@
                                 <input type="email" id="edit-email">
                             </div>
                         </div>
-                        <div style="text-align: right;">
+                        <div style="text-align: right; margin-top: 15px;">
                             <button type="submit" class="neo-btn" style="background: var(--main-accent); color: white;">UPDATE IDENTITY</button>
                         </div>
                     </form>
 
-                    <h2 style="border-bottom: 3px solid black; padding-bottom: 10px; color: var(--error-color);">SECURITY PROTOCOLS</h2>
+                    <h2 class="panel-header" style="color: var(--error-color); border-color: var(--error-color);">SECURITY PROTOCOLS</h2>
                     
                     <form onsubmit="handleSecurityUpdate(event)">
                         <div class="input-group">
                             <label>NEW PASSPHRASE</label>
                             <input type="password" id="edit-password" placeholder="••••••••">
                         </div>
-                        <div style="background: rgba(0,0,0,0.05); padding: 10px; border-left: 3px solid black; margin-bottom: 15px; font-size: 0.9rem;">
+                        <div style="background: rgba(0,0,0,0.05); padding: 10px; border-left: 3px solid var(--box-text); margin-bottom: 15px; font-size: 0.9rem;">
                             <strong>NOTICE:</strong> Updating your passphrase will not terminate active sessions on other devices.
                         </div>
                         <div style="text-align: right;">
@@ -173,13 +196,13 @@
                 </div>
 
                 <div id="panel-network" class="panel">
-                    <h2 style="border-bottom: 3px solid black; padding-bottom: 10px; margin-top: 0;">KNOWN ALLIES</h2>
+                    <h2 class="panel-header">KNOWN ALLIES</h2>
                     <div id="friends-grid" class="friend-grid">
                         </div>
                 </div>
 
                 <div id="panel-logs" class="panel">
-                    <h2 style="border-bottom: 3px solid black; padding-bottom: 10px; margin-top: 0;">RECENT TRANSMISSIONS</h2>
+                    <h2 class="panel-header">RECENT TRANSMISSIONS</h2>
                     <div id="history-list">
                         </div>
                 </div>
