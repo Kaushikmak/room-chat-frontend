@@ -69,5 +69,13 @@
     </div>
 
     <script type="module" src="../scripts/login.js"></script>
+    <script>
+    if ('serviceWorker' in navigator) {
+        // Register SW from the root level
+        navigator.serviceWorker.register('../sw.js') 
+            .then(() => console.log('Service Worker Active'))
+            .catch(err => console.error('SW Fail:', err));
+    }
+</script>
 </body>
 </html>

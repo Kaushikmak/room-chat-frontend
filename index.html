@@ -39,5 +39,13 @@
             <a href="pages/login.html" class="neo-btn" style="font-size: 1.5rem; padding: 20px 40px; display: inline-block; text-decoration: none; color: black;">INITIALIZE</a>
         </div>
     </div>
+    <script>
+    if ('serviceWorker' in navigator) {
+        // Register SW from the root level
+        navigator.serviceWorker.register('./sw.js') 
+            .then(() => console.log('Service Worker Active'))
+            .catch(err => console.error('SW Fail:', err));
+    }
+</script>
 </body>
 </html>
