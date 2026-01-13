@@ -15,8 +15,18 @@ export const API = {
 
         try {
             const response = await fetch(`${CONFIG.API_BASE_URL}${endpoint}`, config);
-            const data = await response.json();
-            return { ok: response.ok, status: response.status, data };
+            
+            // --- DEBUG CHANGE START ---
+            const text = await response.text(); // Get raw text first
+            try {
+                const data = JSON.parse(text); // Try to parse as JSON
+                return { ok: response.ok, status: response.status, data };
+            } catch (e) {
+                console.error("SERVER CRASHED. RAW RESPONSE:", text); // Print the HTML to console
+                return { ok: false, status: 500, data: { detail: "Server Error (Check Console)" } };
+            }
+            // --- DEBUG CHANGE END ---
+
         } catch (error) {
             console.error("API Error:", error);
             return { ok: false, status: 500, data: { detail: "Server Unreachable" } };
