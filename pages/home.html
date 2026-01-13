@@ -340,7 +340,7 @@
     </nav>
 
     <div class="app-grid">
-        <aside class="neo-box scroll-column" style="padding: 0;">
+        <aside id="left-sidebar" class="neo-box scroll-column" style="padding: 0;">
             <div style="padding: 15px; padding-bottom: 0;">
                 <h3 style="margin: 0; margin-bottom: 10px;">TERMINALS</h3>
                 <div class="auth-tabs">
@@ -348,7 +348,6 @@
                     <button id="btn-dms" class="neo-btn tab" onclick="window.showTab('dms')">DM</button>
                 </div>
             </div>
-
             <div id="rooms-nav-content">
                 <div class="toolbar">
                     <input type="text" id="search-input" class="search-input" placeholder="SEARCH FREQUENCY..." onkeyup="window.handleSearch(event)">
@@ -365,9 +364,11 @@
             </div>
         </aside>
 
-        <main class="neo-box" style="padding: 0; overflow: hidden;">
+        <main id="chat-main" class="neo-box" style="padding: 0; overflow: hidden;">
             <div class="chat-layout">
-                <div id="room-header" style="padding: 15px; border-bottom: 3px solid black; background: var(--main-accent);">
+                <div id="room-header" style="padding: 15px; border-bottom: 3px solid black; background: var(--main-accent); display: flex; align-items: center;">
+                    <button id="mobile-back-btn" class="neo-btn" onclick="window.exitRoom()" style="display: none; margin-right: 15px; padding: 5px 12px; font-size: 1.2rem;">←</button>
+                    
                     <h2 id="active-room-name" style="margin: 0; color: white; text-shadow: 2px 2px 0 black;">READY...</h2>
                 </div>
                 
@@ -382,7 +383,7 @@
             </div>
         </main>
 
-        <aside class="neo-box scroll-column">
+        <aside id="right-sidebar" class="neo-box scroll-column">
             <h3 style="border-bottom: 3px solid black; padding-bottom: 10px; margin-top: 0;">DATA STREAM</h3>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <h4 style="margin: 0;">FRIENDS</h4>

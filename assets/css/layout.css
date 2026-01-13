@@ -71,18 +71,79 @@
     }
 }
 
+/* --- MOBILE LAYOUT (App-Like Feel) --- */
 @media (max-width: 768px) {
+    /* 1. Reset Container to Full Viewport */
+    .main-container {
+        padding: 0;
+        padding-top: var(--nav-height); /* Keep space for top navbar */
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden; /* Prevent page scrolling, only internal scrolling */
+    }
+
+    /* 2. Grid becomes a "Stack" of full-screen views */
     .app-grid {
-        display: flex;
-        flex-direction: column;
-        height: auto;
-    }
-    .app-grid > aside, .app-grid > main {
-        height: 500px; /* Fixed height for scrollable areas on mobile */
+        display: block;
         width: 100%;
+        height: 100%;
+        margin: 0;
+        position: relative;
     }
-    .navbar { padding: 0 10px; }
-    .brand { font-size: 1.2rem; }
+
+    /* 3. Make all panels full screen absolute layers */
+    .app-grid > aside, 
+    .app-grid > main {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        border: none; /* Remove border for cleaner mobile look */
+        border-top: 3px solid black; /* Keep top separation */
+        background: var(--bg-color);
+    }
+
+    /* 4. DEFAULT STATE: Show Room List (Left), Hide Chat (Main), Hide Activity (Right) */
+    #left-sidebar {
+        display: flex;
+        z-index: 10;
+    }
+    #chat-main {
+        display: none;
+    }
+    #right-sidebar {
+        display: none; /* Hide 'Data Stream' on mobile to save space */
+    }
+
+    /* 5. ACTIVE CHAT STATE: Show Chat, Hide Room List */
+    body.mobile-chat-open #left-sidebar {
+        display: none;
+    }
+    body.mobile-chat-open #chat-main {
+        display: flex;
+        z-index: 20;
+    }
+    
+    /* 6. Show Back Button only on Mobile */
+    #mobile-back-btn {
+        display: block !important;
+    }
+
+    /* 7. Navbar Adjustments */
+    .navbar {
+        padding: 0 10px;
+        justify-content: space-between;
+    }
+    .brand svg {
+        height: 40px; /* Smaller Logo */
+        width: auto;
+    }
+    
+    /* 8. Fix input zooming on iPhone */
+    input, select, textarea {
+        font-size: 16px !important; 
+    }
 }
 
 /* AUTH FORMS */

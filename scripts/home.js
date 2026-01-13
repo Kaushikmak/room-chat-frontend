@@ -369,11 +369,27 @@ window.openDm = async (username) => {
 };
 
 // --- CHAT LOGIC (Optimized) ---
+window.exitRoom = () => {
+    // Remove the class to show the room list again
+    document.body.classList.remove('mobile-chat-open');
+};
 
 window.loadRoom = async (id) => {
     currentRoomId = id;
+    if (window.innerWidth <= 768) {
+        document.body.classList.add('mobile-chat-open');
+    }
     const msgContainer = document.getElementById('messages-container');
     const form = document.getElementById('chat-form');
+
+    if (messageCache[id]) {
+        renderMessages(messageCache[id]);
+        msgContainer.scrollTop = msgContainer.scrollHeight;
+        form.classList.remove('hidden');
+    } else {
+        msgContainer.innerHTML = getLoaderHtml();
+        form.classList.add('hidden'); 
+    }
 
     // 1. INSTANT LOAD FROM CACHE
     if (messageCache[id]) {
