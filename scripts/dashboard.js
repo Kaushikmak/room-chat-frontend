@@ -4,161 +4,166 @@ import { UI } from '../assets/js/ui.js';
 // Auth Guard
 if (!API.isAuthenticated()) window.location.href = 'login.html';
 
-// --- THEME LOGIC (NEW) ---
+// --- UI LOGIC ---
 window.toggleTheme = () => {
     const current = document.documentElement.getAttribute('data-theme');
     const next = current === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('theme', next);
-    const icon = document.getElementById('theme-icon');
-    if (icon) icon.textContent = next === 'dark' ? '🌙' : '☀️';
+    updateThemeIcon();
 };
 
-function initTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
+function updateThemeIcon() {
+    const theme = localStorage.getItem('theme') || 'light';
     const icon = document.getElementById('theme-icon');
-    if (icon) icon.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+    if (icon) icon.textContent = theme === 'dark' ? '🌙' : '☀️';
 }
+
+window.switchPanel = (panelId) => {
+    // Hide all panels
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    // Deactivate nav buttons
+    document.querySelectorAll('.dash-nav-btn').forEach(b => b.classList.remove('active'));
+    
+    // Show target
+    document.getElementById(`panel-${panelId}`).classList.add('active');
+    // Highlight button (simple lookup by onclick text match would be brittle, so we rely on index or just adding IDs to buttons if needed, but for now specific event delegation is fine or simple loop)
+    // Actually, let's just find the button that called this.
+    // Since we don't pass 'this', we handle styling manually or add IDs to buttons in HTML.
+    // For simplicity in this vanilla JS setup, let's just leave the active state management to the specific button click if passed, 
+    // OR roughly match by text content in a real app. 
+    // To make it robust without changing HTML too much:
+    const buttons = document.querySelectorAll('.dash-nav-btn');
+    if (panelId === 'settings') buttons[0].classList.add('active');
+    if (panelId === 'network') buttons[1].classList.add('active');
+    if (panelId === 'logs') buttons[2].classList.add('active');
+};
 
 // --- INITIALIZATION ---
 async function init() {
-    initTheme(); // Apply theme on load
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon();
+
     await fetchProfile();
     await fetchFriends();
     renderHistory();
 }
 
-// --- PROFILE LOGIC ---
+// --- IDENTITY & SECURITY ---
 async function fetchProfile() {
     const res = await API.request('/api/users/profile/', 'GET', null, true);
     if (res.ok) {
         const user = res.data;
-        document.getElementById('display-username').textContent = user.username;
-        document.getElementById('display-email').textContent = user.email;
+        // Sidebar Updates
+        document.getElementById('sidebar-username').textContent = user.username;
+        document.getElementById('avatar-display').textContent = user.username.charAt(0).toUpperCase();
         
-        // Pre-fill edit form
+        if (user.last_login) {
+            const date = new Date(user.last_login);
+            document.getElementById('last-login-badge').textContent = `LAST LOGIN: ${date.toLocaleDateString()}`;
+        }
+
+        // Form Pre-fill
         document.getElementById('edit-username').value = user.username;
         document.getElementById('edit-email').value = user.email;
     }
 }
 
-window.toggleEditMode = (show) => {
-    const section = document.getElementById('edit-section');
-    if (show) section.classList.remove('hidden');
-    else section.classList.add('hidden');
-};
-
-window.handleProfileUpdate = async (e) => {
+window.handleIdentityUpdate = async (e) => {
     e.preventDefault();
+    const btn = e.submitter; // Get the button that triggered submit
+    const originalText = btn.textContent;
+    btn.textContent = "PROCESSING...";
+    btn.disabled = true;
+
     const username = document.getElementById('edit-username').value;
     const email = document.getElementById('edit-email').value;
-    const password = document.getElementById('edit-password').value;
 
-    const payload = { username, email };
-    if (password) payload.password = password;
-
-    const res = await API.request('/api/users/profile/', 'PUT', payload, true);
+    const res = await API.request('/api/users/profile/', 'PUT', { username, email }, true);
 
     if (res.ok) {
-        // FIX: Update LocalStorage immediately so Chat knows who we are
-        if (payload.username) localStorage.setItem('username', payload.username);
-        
-        UI.showStatus('status-message', "SYSTEM UPDATED SUCCESSFULLY", "success");
-        await fetchProfile(); 
-        window.toggleEditMode(false);
+        localStorage.setItem('username', username); // Sync local storage
+        UI.showStatus('status-message', "IDENTITY RECORDS UPDATED", "success");
+        await fetchProfile(); // Refresh sidebar
     } else {
         UI.showStatus('status-message', "UPDATE FAILED: " + JSON.stringify(res.data), "error");
     }
+
+    btn.textContent = originalText;
+    btn.disabled = false;
+    setTimeout(() => UI.hideStatus('status-message'), 3000);
+};
+
+window.handleSecurityUpdate = async (e) => {
+    e.preventDefault();
+    const password = document.getElementById('edit-password').value;
+    if (!password) {
+        UI.showStatus('status-message', "PASSPHRASE CANNOT BE EMPTY", "error");
+        return;
+    }
+
+    const btn = e.submitter;
+    btn.textContent = "ENCRYPTING...";
+    btn.disabled = true;
+
+    const res = await API.request('/api/users/profile/', 'PUT', { password }, true);
+
+    if (res.ok) {
+        UI.showStatus('status-message', "SECURITY CREDENTIALS ROTATED", "success");
+        document.getElementById('edit-password').value = ""; // Clear field
+    } else {
+        UI.showStatus('status-message', "SECURITY UPDATE FAILED", "error");
+    }
+
+    btn.textContent = "CHANGE PASSPHRASE";
+    btn.disabled = false;
+    setTimeout(() => UI.hideStatus('status-message'), 3000);
 };
 
 window.handleLogout = () => API.logout();
 
-// --- FRIENDS LOGIC ---
+// --- DATA LISTS ---
 async function fetchFriends() {
     const res = await API.request('/api/users/friends/', 'GET', null, true);
     if (res.ok) {
-        renderFriends(res.data);
-    }
-}
-
-function renderFriends(friends) {
-    const container = document.getElementById('friends-grid');
-    if (friends.length === 0) {
-        container.innerHTML = '<div style="padding:10px; font-style:italic;">No allies found.</div>';
-        return;
-    }
-
-    container.innerHTML = friends.map(f => {
-        const lastLogin = f.friend.last_login ? new Date(f.friend.last_login) : null;
-        const now = new Date();
-        
-        // Simple logic: Online if active in last 15 minutes
-        const isOnline = lastLogin && (now - lastLogin) < (15 * 60 * 1000); 
-        const statusClass = isOnline ? 'status-online' : 'status-offline';
-        const timeText = lastLogin ? timeAgo(lastLogin) : 'Never';
-
-        return `
-        <div class="friend-card" onclick="window.location.href='home.html'">
-            <div style="font-weight:900; margin-bottom:5px;">${f.friend.username}</div>
-            <div style="font-size:0.75rem; color:#555;">
-                <span class="status-dot ${statusClass}"></span>
-                ${isOnline ? 'ONLINE' : timeText}
+        const container = document.getElementById('friends-grid');
+        if (res.data.length === 0) {
+            container.innerHTML = '<div style="padding:15px; opacity:0.6; grid-column: 1/-1; text-align:center;">NO ALLIES DETECTED IN NETWORK</div>';
+            return;
+        }
+        container.innerHTML = res.data.map(f => `
+            <div class="friend-card">
+                <div class="avatar-circle" style="margin: 0 auto 10px auto; background:black; color:white;">
+                    ${f.friend.username.charAt(0).toUpperCase()}
+                </div>
+                <div style="font-weight:900; font-size:1.1rem;">${f.friend.username}</div>
+                <div style="font-size:0.8rem; opacity:0.7;">CONNECTED</div>
             </div>
-        </div>
-        `;
-    }).join('');
+        `).join('');
+    }
 }
 
-// --- HISTORY LOGIC ---
 function renderHistory() {
     const container = document.getElementById('history-list');
     const history = JSON.parse(localStorage.getItem('room_history') || '[]');
 
     if (history.length === 0) {
-        container.innerHTML = '<div style="padding:15px; opacity:0.6;">No dive logs recorded.</div>';
+        container.innerHTML = '<div style="padding:15px; opacity:0.6; font-style:italic;">Log banks empty.</div>';
         return;
     }
 
     container.innerHTML = history.map(item => `
-        <div class="history-item" onclick="window.location.href='home.html?room=${item.id}'">
-            <div>
-                <span style="font-weight:800;"># ${item.topic.toUpperCase()}</span> / 
-                <span>${item.name}</span>
-            </div>
-            <div style="font-size:0.8rem; opacity:0.6;">
-                ${new Date(item.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-            </div>
+        <div class="list-item" onclick="window.location.href='home.html?room=${item.id}'" style="display:flex; justify-content:space-between;">
+            <span>
+                <span style="color:var(--main-accent);">#</span> ${item.topic.toUpperCase()} / 
+                <strong>${item.name}</strong>
+            </span>
+            <span style="font-family:monospace; font-size:0.8rem;">
+                ${new Date(item.time).toLocaleDateString()}
+            </span>
         </div>
     `).join('');
-}
-
-// Helper: Time Ago
-function timeAgo(date) {
-    const seconds = Math.floor((new Date() - date) / 1000);
-    
-    // Handle clock skew (if client time is slightly behind server)
-    if (seconds < 5) return "Just now";
-
-    let interval = seconds / 31536000;
-    if (interval > 1) return Math.floor(interval) + " months ago"; // Approximation for > 1 year usually falls to months/years logic
-    
-    interval = seconds / 2592000;
-    if (interval > 1) return Math.floor(interval) + " months ago";
-    
-    interval = seconds / 604800;
-    if (interval > 1) return Math.floor(interval) + " weeks ago";
-    
-    interval = seconds / 86400;
-    if (interval > 1) return Math.floor(interval) + " days ago";
-    
-    interval = seconds / 3600;
-    if (interval > 1) return Math.floor(interval) + " hrs ago";
-    
-    interval = seconds / 60;
-    if (interval > 1) return Math.floor(interval) + " mins ago";
-    
-    return Math.floor(seconds) + " secs ago";
 }
 
 init();
