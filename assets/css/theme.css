@@ -105,3 +105,31 @@ input:focus {
 .status-box { margin-top: 10px; font-weight: bold; text-align: center; }
 .status-box.success { background-color: var(--success-color); color: black; }
 .status-box.error { background-color: var(--error-color); color: white; }
+
+/* ... (Keep all existing styles) ... */
+
+/* --- LOADING SPINNER --- */
+.loader-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: 150px; /* Ensures it takes up space */
+    grid-column: 1 / -1; /* Spans full width in grids */
+}
+
+.neo-spinner {
+    width: 48px;
+    height: 48px;
+    border: 5px solid var(--box-text);
+    border-bottom-color: transparent; /* Creates the gap */
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

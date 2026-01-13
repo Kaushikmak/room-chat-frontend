@@ -4,6 +4,78 @@ import { UI } from '../assets/js/ui.js';
 // Auth Guard
 if (!API.isAuthenticated()) window.location.href = 'login.html';
 
+// --- HELPER: Loader HTML ---
+const getLoaderHtml = () => '<div class="loader-container"><span class="neo-spinner"></span></div>';
+
+// --- FRIENDS LOGIC ---
+async function fetchFriends() {
+    const container = document.getElementById('friends-grid');
+    // 1. Show Loader
+    container.innerHTML = getLoaderHtml();
+
+    const res = await API.request('/api/users/friends/', 'GET', null, true);
+    if (res.ok) {
+        renderFriends(res.data);
+    } else {
+        container.innerHTML = '<div style="padding:20px; text-align:center; opacity:0.6;">Network Error.</div>';
+    }
+}
+
+function renderFriends(friends) {
+    const container = document.getElementById('friends-grid');
+    if (friends.length === 0) {
+        container.innerHTML = '<div style="padding:20px; text-align:center; opacity:0.6; grid-column: 1/-1;">NO ALLIES DETECTED.</div>';
+        return;
+    }
+
+    container.innerHTML = friends.map(f => {
+        const lastLogin = f.friend.last_login ? new Date(f.friend.last_login) : null;
+        const now = new Date();
+        const isOnline = lastLogin && (now - lastLogin) < (15 * 60 * 1000); 
+        const statusClass = isOnline ? 'status-online' : 'status-offline';
+        const timeText = lastLogin ? timeAgo(lastLogin) : 'Never';
+
+        return `
+        <div class="friend-card" onclick="window.location.href='home.html'">
+            <div class="avatar-circle" style="margin: 0 auto 10px auto; background:var(--box-text); color:var(--box-bg);">
+                ${f.friend.username.charAt(0).toUpperCase()}
+            </div>
+            <div style="font-weight:900; font-size:1.1rem;">${f.friend.username}</div>
+            <div style="font-size:0.8rem; opacity:0.7;">
+                <span class="status-dot ${statusClass}"></span>
+                ${isOnline ? 'ONLINE' : timeText}
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+
+// --- HISTORY LOGIC ---
+function renderHistory() {
+    const container = document.getElementById('history-list');
+    
+    // Simulate a brief "check" for effect, or just load instantly. 
+    // Since this is local storage, it's instant, but for consistency lets render:
+    const history = JSON.parse(localStorage.getItem('room_history') || '[]');
+
+    if (history.length === 0) {
+        container.innerHTML = '<div style="padding:20px; text-align:center; opacity:0.6; font-style:italic;">Log banks empty.</div>';
+        return;
+    }
+
+    container.innerHTML = history.map(item => `
+        <div class="log-item" onclick="window.location.href='home.html?room=${item.id}'">
+            <span>
+                <span style="color:var(--main-accent);">#</span> ${item.topic.toUpperCase()} / 
+                <strong>${item.name}</strong>
+            </span>
+            <span style="font-family:monospace; font-size:0.8rem;">
+                ${new Date(item.time).toLocaleDateString()}
+            </span>
+        </div>
+    `).join('');
+}
+
 // --- UI LOGIC ---
 window.toggleTheme = () => {
     const current = document.documentElement.getAttribute('data-theme');

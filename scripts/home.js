@@ -9,6 +9,72 @@ let expandedTopics = new Set();
 // --- CACHE STORE ---
 let messageCache = {}; // Stores messages by room ID: { "1": [...messages], "2": [...] }
 
+// --- HELPER: Loader HTML ---
+const getLoaderHtml = () => '<div class="loader-container"><span class="neo-spinner"></span></div>';
+
+// --- INIT ---
+async function init() {
+    if (!API.isAuthenticated()) window.location.href = 'login.html';
+    await verifyUserIdentity();
+    
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.getElementById('theme-icon').textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+    
+    // 1. Show Loaders in all containers immediately
+    document.getElementById('public-list-container').innerHTML = getLoaderHtml();
+    document.getElementById('friends-list').innerHTML = getLoaderHtml();
+    document.getElementById('activity-feed').innerHTML = getLoaderHtml();
+    
+    // 2. Parallel Fetch
+    await Promise.all([fetchTopics(), fetchRooms(), fetchFriends(), fetchActivity()]);
+    
+    // 3. Render (will overwrite loaders)
+    renderPublicList();
+    renderDmList(); // Uses allFriends fetched above
+}
+
+// ... (fetch functions remain the same) ...
+
+// --- CHAT LOGIC ---
+window.loadRoom = async (id) => {
+    currentRoomId = id;
+    const msgContainer = document.getElementById('messages-container');
+    const form = document.getElementById('chat-form');
+
+    // 1. Check Cache
+    if (messageCache[id]) {
+        renderMessages(messageCache[id]);
+        msgContainer.scrollTop = msgContainer.scrollHeight;
+        form.classList.remove('hidden');
+    } else {
+        // 2. Show Loader if not in cache
+        msgContainer.innerHTML = getLoaderHtml();
+        form.classList.add('hidden'); // Hide form while loading
+    }
+
+    // 3. Fetch
+    const [roomRes, msgRes] = await Promise.all([
+        API.request(`/api/rooms/${id}/`),
+        API.request(`/api/rooms/${id}/messages/`)
+    ]);
+
+    if (roomRes.ok) {
+        document.getElementById('active-room-name').textContent = roomRes.data.name;
+        addToHistory(roomRes.data);
+    }
+
+    if (msgRes.ok) {
+        messageCache[id] = msgRes.data;
+        renderMessages(msgRes.data);
+        form.classList.remove('hidden'); // Show form now
+    }
+    
+    // 4. Start Polling
+    if (window.pollInterval) clearInterval(window.pollInterval);
+    window.pollInterval = setInterval(() => fetchMessages(id), 5000);
+};
+
 // --- UI & THEME ---
 window.toggleTheme = () => {
     const current = document.documentElement.getAttribute('data-theme');
